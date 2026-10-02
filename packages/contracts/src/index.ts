@@ -1,3 +1,5 @@
+export const PULSE_LEGAL_VERSION = "1.0 · 02/10/2026";
+
 export type SocialPlatform = "instagram" | "tiktok" | "linkedin";
 
 export type PublicationStatus =
