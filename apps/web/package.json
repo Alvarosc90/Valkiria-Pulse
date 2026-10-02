@@ -6,6 +6,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:valky": "vite --host 127.0.0.1 --port 5175 --mode valky",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false"
   },
