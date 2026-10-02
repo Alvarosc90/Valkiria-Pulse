@@ -21,6 +21,7 @@ import { BrandBrainView } from "./views/BrandBrainView";
 import { CalendarView } from "./views/CalendarView";
 import { MediaLibraryView } from "./views/MediaLibraryView";
 import { BillingView } from "./views/BillingView";
+import { AnalyticsView } from "./views/AnalyticsView";
 
 type WorkspaceView =
   | "overview"
@@ -29,6 +30,7 @@ type WorkspaceView =
   | "media"
   | "agents"
   | "billing"
+  | "analytics"
   | "audit";
 
 const platforms: Array<{
@@ -63,7 +65,8 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "approvals", label: "Publicaciones" },
   { id: "media", label: "Biblioteca" },
   { id: "agents", label: "Agentes" },
-  { id: "billing", label: "Plan y uso" }
+  { id: "billing", label: "Plan y uso" },
+  { id: "analytics", label: "Analytics" }
 ];
 
 export default function App() {
@@ -179,6 +182,7 @@ export default function App() {
       requestedView === "media" ||
       requestedView === "agents" ||
       requestedView === "billing" ||
+      requestedView === "analytics" ||
       requestedView === "audit"
     ) {
       setView(requestedView);
@@ -330,7 +334,6 @@ export default function App() {
               Auditoría
             </button>
           )}
-          <button className="nav-item muted">Analytics · pronto</button>
         </nav>
 
         <div className="sidebar-footer">
@@ -600,6 +603,10 @@ export default function App() {
 
         {view === "billing" && (
           <BillingView role={auth.role} onNotice={setNotice} />
+        )}
+
+        {view === "analytics" && (
+          <AnalyticsView brandId={brandId} onNotice={setNotice} />
         )}
 
         {view === "audit" && showAudit && (

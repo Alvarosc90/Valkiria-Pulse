@@ -19,7 +19,25 @@ function brandBlock(brand: BrandContext) {
 
 function recentBlock(context?: AgentGenerationContext) {
   const recent = context?.recentPosts?.slice(0, 12) ?? [];
-  return recent.length ? recent.map((item, index) => `${index + 1}. ${item}`).join("\n") : "Sin publicaciones recientes.";
+  return recent.length
+    ? recent.map((item, index) => `${index + 1}. ${item}`).join("\n")
+    : "Sin publicaciones recientes.";
+}
+
+function performanceBlock(context?: AgentGenerationContext) {
+  const signals = context?.performanceSignals?.slice(0, 10) ?? [];
+  if (!signals.length) return "Sin señales de rendimiento disponibles.";
+
+  return signals
+    .map((signal) =>
+      JSON.stringify({
+        key: signal.key,
+        value: signal.value,
+        sampleSize: signal.sampleSize,
+        metadata: signal.metadata ?? {}
+      })
+    )
+    .join("\n");
 }
 
 export function platformSystemPrompt(platform: SocialPlatform) {
@@ -30,6 +48,9 @@ export function platformSystemPrompt(platform: SocialPlatform) {
     "No inventes funciones, cifras, clientes, premios, testimonios ni resultados.",
     "Evita frases genericas de IA, exageraciones y cualquier termino prohibido por la marca.",
     "No repitas hooks, aperturas o estructuras de las publicaciones recientes.",
+    "Las señales de rendimiento son orientación editorial, no hechos para publicar.",
+    "No menciones métricas internas, scores ni relaciones causales salvo que estén explícitamente aprobadas en Brand Brain o la entrada editorial.",
+    "Ignora señales con muestra pequeña si entran en conflicto con Brand Brain, el objetivo o el contexto de plataforma.",
     "Devuelve exclusivamente un objeto JSON valido, sin markdown."
   ];
 
@@ -81,6 +102,9 @@ export function platformUserPrompt(
     "",
     "PUBLICACIONES_RECIENTES_A_EVITAR:",
     recentBlock(context),
+    "",
+    "SEÑALES_DE_RENDIMIENTO_SOLO_PARA_ORIENTACION_EDITORIAL:",
+    performanceBlock(context),
     "",
     "Genera una pieza nueva, especifica para esta red y coherente con la marca."
   ].join("\n");
