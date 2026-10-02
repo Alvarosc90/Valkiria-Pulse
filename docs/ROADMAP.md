@@ -11,27 +11,29 @@
 - [x] TrainIA integration boundary
 
 ## Phase 2 - Connection experience
-- [ ] PULSE authentication and RBAC
-- [ ] Instagram OAuth inside PULSE
-- [ ] TikTok OAuth inside PULSE
-- [ ] LinkedIn OAuth inside PULSE
-- [ ] Token refresh jobs
-- [ ] Connection health UI
+- [x] PULSE authentication and RBAC
+- [x] Instagram OAuth inside PULSE
+- [x] TikTok OAuth inside PULSE
+- [x] LinkedIn OAuth inside PULSE
+- [x] Token refresh jobs
+- [x] Connection health UI
 
 ## Phase 3 - Content intelligence
-- [ ] LLM-backed Brand Brain
-- [ ] Per-platform editorial memory
-- [ ] Duplicate/near-duplicate detection
-- [ ] Platform-specific copy generation
-- [ ] Approval workflow
-- [ ] Media library
+- [x] Pluggable LLM-backed Brand Brain runtime
+- [x] Per-platform editorial memory
+- [x] Duplicate/near-duplicate detection and regeneration
+- [x] Platform-specific copy generation
+- [x] Approval workflow
+- [x] Media library with temporary provider URLs
 
 ## Phase 4 - Productization
-- [ ] Production deployment
+- [x] Production Docker deployment stack
+- [ ] Deploy production at pulse.valkiria.tech
 - [ ] Plans and billing
 - [ ] TrainIA SSO/module button
-- [ ] Team approvals
-- [ ] Audit log
+- [x] Team approvals
+- [x] Audit log
+- [ ] Production backup/restore runbook
 
 ## Phase 5 - Analytics
 - [ ] Instagram insights permissions
