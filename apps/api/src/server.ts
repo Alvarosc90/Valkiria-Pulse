@@ -7,6 +7,10 @@ import { z } from "zod";
 import { agentRuntime, pulseOrchestrator } from "./agents/runtime.js";
 import authRouter from "./auth/routes.js";
 import { requireAuth, requireTenantMatch } from "./auth/middleware.js";
+import {
+  assertPlanLimit,
+  incrementMonthlyUsage
+} from "./billing/limits.js";
 import { config } from "./config.js";
 import connectionsRouter from "./connections/routes.js";
 import { pingDb } from "./db.js";
@@ -14,6 +18,7 @@ import { errorHandler } from "./http/errorHandler.js";
 import integrationsRouter from "./integrations/routes.js";
 import approvalsRouter from "./routes/approvals.js";
 import auditRouter from "./routes/audit.js";
+import billingRouter from "./routes/billing.js";
 import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
 import mediaRouter from "./routes/media.js";
@@ -87,6 +92,12 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
     }).parse(req.body);
 
     const tenantId = Number(req.auth!.tenantId);
+    await assertPlanLimit({
+      tenantId,
+      metric: "aiGenerationsPerMonth",
+      increment: 1
+    });
+
     const brand = await loadBrandContext(tenantId, body.brandId);
     const recentPosts = await recentPlatformPosts(
       tenantId,
@@ -104,6 +115,12 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
       { recentPosts }
     );
 
+    await incrementMonthlyUsage(
+      tenantId,
+      "aiGenerationsPerMonth",
+      1
+    );
+
     res.json({
       data: generated,
       meta: {
@@ -119,6 +136,7 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
 
 app.use("/api/v1/approvals", requireAuth, requireTenantMatch, approvalsRouter);
 app.use("/api/v1/audit", requireAuth, requireTenantMatch, auditRouter);
+app.use("/api/v1/billing", requireAuth, requireTenantMatch, billingRouter);
 app.use("/api/v1/brands", requireAuth, requireTenantMatch, brandsRouter);
 app.use("/api/v1/calendars", requireAuth, requireTenantMatch, calendarsRouter);
 app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
