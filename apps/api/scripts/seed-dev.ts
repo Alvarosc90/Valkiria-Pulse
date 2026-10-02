@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { db } from "../src/db.js";
 
 async function main() {
@@ -48,8 +49,44 @@ async function main() {
       [tenantId]
     );
 
+    const ownerEmail = String(process.env.PULSE_DEV_OWNER_EMAIL ?? "").trim().toLowerCase();
+    const ownerPassword = String(process.env.PULSE_DEV_OWNER_PASSWORD ?? "");
+
+    let ownerUserId: number | null = null;
+    if (ownerEmail || ownerPassword) {
+      if (!ownerEmail || ownerPassword.length < 8) {
+        throw new Error(
+          "PULSE_DEV_OWNER_EMAIL and PULSE_DEV_OWNER_PASSWORD (min 8 chars) must both be set"
+        );
+      }
+
+      const [existingUsers] = await connection.query<any[]>(
+        "SELECT id FROM users WHERE email = ? LIMIT 1",
+        [ownerEmail]
+      );
+
+      if (existingUsers[0]?.id) {
+        ownerUserId = Number(existingUsers[0].id);
+      } else {
+        const passwordHash = await bcrypt.hash(ownerPassword, 12);
+        const [userResult] = await connection.execute<any>(
+          `INSERT INTO users (email, password_hash, display_name, active)
+           VALUES (?, ?, 'PULSE Owner', 1)`,
+          [ownerEmail, passwordHash]
+        );
+        ownerUserId = Number(userResult.insertId);
+      }
+
+      await connection.execute(
+        `INSERT INTO user_tenants (user_id, tenant_id, role, active)
+         VALUES (?, ?, 'owner', 1)
+         ON DUPLICATE KEY UPDATE role = 'owner', active = 1`,
+        [ownerUserId, tenantId]
+      );
+    }
+
     await connection.commit();
-    console.log(JSON.stringify({ ok: true, tenantId, brandId }, null, 2));
+    console.log(JSON.stringify({ ok: true, tenantId, brandId, ownerUserId }, null, 2));
   } catch (error) {
     await connection.rollback();
     throw error;
