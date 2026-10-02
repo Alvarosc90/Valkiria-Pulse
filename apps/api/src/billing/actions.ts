@@ -6,6 +6,43 @@ import { getTenantSubscription } from "./subscription.js";
 
 export type BillingAction = "pause" | "resume" | "cancel" | "change_plan";
 
+function assertActionState(action: BillingAction, status: string) {
+  if (action === "pause" && status !== "active") {
+    throw new HttpError(
+      "Solo una suscripcion activa puede pausarse",
+      409,
+      "BILLING_ACTION_STATE_INVALID"
+    );
+  }
+  if (action === "resume" && status !== "paused") {
+    throw new HttpError(
+      "Solo una suscripcion pausada puede reanudarse",
+      409,
+      "BILLING_ACTION_STATE_INVALID"
+    );
+  }
+  if (
+    action === "cancel" &&
+    !["trial", "active", "paused", "past_due"].includes(status)
+  ) {
+    throw new HttpError(
+      "La suscripcion no puede cancelarse en su estado actual",
+      409,
+      "BILLING_ACTION_STATE_INVALID"
+    );
+  }
+  if (
+    action === "change_plan" &&
+    !["trial", "active"].includes(status)
+  ) {
+    throw new HttpError(
+      "El plan no puede cambiarse en el estado actual",
+      409,
+      "BILLING_ACTION_STATE_INVALID"
+    );
+  }
+}
+
 export async function prepareSubscriptionAction(input: {
   tenantId: number;
   userId: number;
@@ -23,6 +60,8 @@ export async function prepareSubscriptionAction(input: {
     );
   }
 
+  assertActionState(input.action, current.status);
+
   if (
     input.action === "change_plan" &&
     (!input.targetPlanKey || !input.targetPriceId)
@@ -32,6 +71,34 @@ export async function prepareSubscriptionAction(input: {
       400,
       "BILLING_TARGET_PLAN_REQUIRED"
     );
+  }
+
+  if (input.action === "change_plan") {
+    if (input.targetPlanKey === current.plan.key) {
+      throw new HttpError(
+        "El plan destino debe ser distinto del plan actual",
+        409,
+        "BILLING_TARGET_PLAN_SAME"
+      );
+    }
+
+    const [prices] = await db.query<RowDataPacket[]>(
+      `SELECT id
+       FROM saas_plan_prices
+       WHERE id = ?
+         AND plan_key = ?
+         AND status = 'active'
+       LIMIT 1`,
+      [input.targetPriceId!, input.targetPlanKey!]
+    );
+
+    if (!prices[0]) {
+      throw new HttpError(
+        "El precio destino no pertenece al plan seleccionado o no esta activo",
+        409,
+        "BILLING_PRICE_NOT_CONFIGURED"
+      );
+    }
   }
 
   const id = randomUUID();
@@ -74,7 +141,9 @@ export async function prepareSubscriptionAction(input: {
   if (
     row.action_type !== input.action ||
     row.current_plan_key !== current.plan.key ||
-    (row.target_plan_key ?? null) !== (input.targetPlanKey ?? null)
+    (row.target_plan_key ?? null) !== (input.targetPlanKey ?? null) ||
+    (row.target_price_id == null ? null : Number(row.target_price_id)) !==
+      (input.targetPriceId ?? null)
   ) {
     throw new HttpError(
       "La clave de idempotencia ya fue usada para otra accion",
