@@ -8,11 +8,10 @@ const router = Router();
 router.get("/", async (req, res, next) => {
   try {
     const input = z.object({
-      tenantId: z.coerce.number().int().positive(),
       brandId: z.coerce.number().int().positive().optional()
     }).parse(req.query);
 
-    const params: unknown[] = [input.tenantId];
+    const params: Array<string | number> = [Number(req.auth!.tenantId)];
     let brandFilter = "";
     if (input.brandId) {
       brandFilter = " AND brand_id = ?";
