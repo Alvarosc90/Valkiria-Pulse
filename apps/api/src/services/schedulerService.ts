@@ -1,24 +1,14 @@
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
-import {
-  InstagramAgent,
-  LinkedInAgent,
-  SocialOrchestrator,
-  TikTokAgent
-} from "@pulse/agents";
 import type {
   BrandContext,
   CalendarEntry,
   GeneratedPost,
   SocialPlatform
 } from "@pulse/contracts";
+import { pulseOrchestrator } from "../agents/runtime.js";
 import { db } from "../db.js";
 import { providerFor } from "../providers/registry.js";
-
-const orchestrator = new SocialOrchestrator([
-  new InstagramAgent(),
-  new TikTokAgent(),
-  new LinkedInAgent()
-]);
+import { recentPlatformPosts } from "./agentContextService.js";
 
 function json<T>(value: unknown, fallback: T): T {
   if (value == null) return fallback;
@@ -39,7 +29,8 @@ function toBrand(row: RowDataPacket): BrandContext {
     tone: json<string[]>(row.tone_json, []),
     products: json<string[]>(row.products_json, []),
     approvedClaims: json<string[]>(row.approved_claims_json, []),
-    forbiddenTerms: json<string[]>(row.forbidden_terms_json, [])
+    forbiddenTerms: json<string[]>(row.forbidden_terms_json, []),
+    ctas: json<string[]>(row.ctas_json, [])
   };
 }
 
@@ -54,6 +45,10 @@ function toEntry(row: RowDataPacket): CalendarEntry {
     angle: row.angle ?? undefined,
     assetRefs: [],
     notes: row.copy_seed ?? undefined,
+    platformContext: json<Record<string, unknown>>(
+      row.platform_payload_json,
+      {}
+    ),
     status: row.status
   };
 }
@@ -64,8 +59,8 @@ function enrichContent(row: RowDataPacket, generated: GeneratedPost): GeneratedP
   const material = typeof platformPayload.material === "string" ? platformPayload.material : undefined;
 
   const metadata: Record<string, unknown> = {
-    ...generated.metadata,
     ...platformPayload,
+    ...generated.metadata,
     ...accountMetadata
   };
 
@@ -89,8 +84,10 @@ async function dueRows(limit: number) {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT
        ce.*, b.name AS brand_name, b.description AS brand_description,
-       b.tone_json, b.products_json, b.approved_claims_json, b.forbidden_terms_json,
-       sa.id AS social_account_id, sa.external_account_id, sa.metadata_json AS account_metadata_json
+       b.tone_json, b.products_json, b.approved_claims_json,
+       b.forbidden_terms_json, b.ctas_json,
+       sa.id AS social_account_id, sa.external_account_id,
+       sa.metadata_json AS account_metadata_json
      FROM calendar_entries ce
      INNER JOIN brands b ON b.id = ce.brand_id
      INNER JOIN social_accounts sa
@@ -142,7 +139,18 @@ export async function publishDue(limit = 10) {
       );
       await connection.commit();
 
-      const generated = await orchestrator.generate(toEntry(row), toBrand(row));
+      const recentPosts = await recentPlatformPosts(
+        Number(row.tenant_id),
+        Number(row.brand_id),
+        row.platform as SocialPlatform
+      );
+
+      const generated = await pulseOrchestrator.generate(
+        toEntry(row),
+        toBrand(row),
+        { recentPosts }
+      );
+
       const content = enrichContent(row, generated);
       const provider = providerFor(row.platform as SocialPlatform);
       const result = await provider.publish({
