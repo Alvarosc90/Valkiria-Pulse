@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   apiFetch,
   apiJson,
+  exchangeTrainiaSso,
   loginRequest,
   logoutRequest,
   refreshAccessToken
@@ -91,16 +92,26 @@ export default function App() {
     window.history.replaceState({}, "", nextView === "overview" ? "/" : "/?view=" + nextView);
   }
 
-  async function loadAuth() {
-    const refreshed = await refreshAccessToken();
-    if (!refreshed) {
-      setBooting(false);
-      return;
-    }
-
+  async function loadAuth(ssoToken?: string) {
     try {
+      if (ssoToken) {
+        await exchangeTrainiaSso(ssoToken);
+        const payload = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
+        setAuth(payload.data);
+        return;
+      }
+
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) return;
+
       const payload = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
       setAuth(payload.data);
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "No se pudo iniciar la sesión de PULSE"
+      );
     } finally {
       setBooting(false);
     }
@@ -145,6 +156,19 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, "")
+    );
+    const ssoToken = hashParams.get("sso") ?? params.get("sso");
+
+    if (ssoToken) {
+      // Remove the short-lived integration token from the visible URL
+      // before exchanging it so browser history and copied links stay clean.
+      window.history.replaceState({}, "", "/");
+      void loadAuth(ssoToken);
+      return;
+    }
+
     const requestedView = params.get("view");
     if (
       requestedView === "calendar" ||
