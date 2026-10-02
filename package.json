@@ -2,14 +2,20 @@
   "name": "valkiria-pulse",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=20" },
-  "workspaces": ["apps/*", "packages/*"],
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:api": "npm run dev --workspace @pulse/api",
     "dev:web": "npm run dev --workspace @pulse/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build:web": "npm run build --workspace @pulse/web",
-    "qa": "npm run typecheck && npm test && npm run build:web"
+    "qa": "npm run typecheck && npm test && npm run security:audit && npm run build:web",
+    "security:audit": "npm audit --audit-level=high"
   }
 }
