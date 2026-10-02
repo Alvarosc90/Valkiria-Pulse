@@ -53,9 +53,9 @@ router.patch("/:brandId", async (req, res, next) => {
     }).parse(req.body);
 
     const fields: string[] = [];
-    const values: unknown[] = [];
+    const values: Array<string | number | null> = [];
 
-    const add = (column: string, value: unknown) => {
+    const add = (column: string, value: string | number | null) => {
       fields.push(`${column} = ?`);
       values.push(value);
     };
