@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
+import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { agentRuntime, pulseOrchestrator } from "./agents/runtime.js";
 import authRouter from "./auth/routes.js";
@@ -34,14 +35,40 @@ import {
 
 const app = express();
 
-app.use(helmet());
+app.disable("x-powered-by");
+if (config.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
+app.use(helmet({
+  referrerPolicy: { policy: "no-referrer" },
+  hsts: config.NODE_ENV === "production"
+    ? { maxAge: 31536000, includeSubDomains: true, preload: false }
+    : false,
+  crossOriginResourcePolicy: { policy: "same-site" }
+}));
 app.use(cors({
   origin: config.CORS_ORIGIN.split(",").map((value) => value.trim()),
   credentials: true
 }));
-app.use(pinoHttp());
+app.use(pinoHttp({
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "res.headers.set-cookie"
+    ],
+    censor: "[REDACTED]"
+  }
+}));
 app.use(cookieParser());
-app.use(express.json({ limit: "2mb" }));
+app.use("/api/", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 1200,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+}));
+app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", async (_req, res) => {
   try {
