@@ -41,6 +41,32 @@ export async function loginRequest(input: {
   return payload;
 }
 
+export async function exchangeTrainiaSso(token: string) {
+  const response = await fetch(`${API_URL}/api/v1/integrations/trainia/exchange`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token })
+  });
+
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.message ??
+        payload?.error ??
+        "No se pudo iniciar PULSE desde TrainIA"
+    );
+  }
+
+  const nextAccessToken = payload?.data?.accessToken;
+  if (!nextAccessToken) {
+    throw new Error("TrainIA SSO no devolvio una sesion valida");
+  }
+
+  setAccessToken(nextAccessToken);
+  return payload.data;
+}
+
 export async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise;
 
