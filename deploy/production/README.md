@@ -14,7 +14,7 @@ PULSE is isolated from TrainIA at runtime. TrainIA will consume it as a module/c
 ```bash
 git clone https://github.com/Alvarosc90/Valkiria-Pulse.git
 cd Valkiria-Pulse
-git checkout feature/pulse-mvp
+git checkout main
 cd deploy/production
 chmod +x bootstrap-env.sh deploy.sh security-preflight.sh restore-smoke-test.sh
 ./bootstrap-env.sh
@@ -24,7 +24,7 @@ curl -I http://127.0.0.1:8081
 curl http://127.0.0.1:8081/health
 ```
 
-The bootstrap script generates independent database passwords, JWT secrets, the 32-byte base64 credential-encryption key and the TrainIA/PULSE SSO secret. It refuses to overwrite an existing `.env`. Fill only the provider OAuth credentials and optional model-gateway settings afterward. Never reuse database, JWT or provider secrets for SSO.
+The bootstrap script generates independent database passwords, JWT secrets, the 32-byte base64 credential-encryption key and the TrainIA/PULSE SSO secret. It refuses to overwrite an existing `.env`. Fill the provider OAuth credentials, SMTP configuration, Mercado Pago server credentials and optional model-gateway settings afterward. Never reuse database, JWT or provider secrets for SSO.
 
 ## Bootstrap first tenant
 
@@ -111,3 +111,33 @@ PULSE_BASE_URL=https://pulse.valkiria.tech
 ```
 
 Do not reuse JWT, database, provider or credential-encryption secrets for this value.
+
+
+## Public signup and email
+
+Production public signup requires email verification. Configure SMTP before enabling acquisition:
+
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_SECURE / SMTP_STARTTLS
+- SMTP_USER / SMTP_PASSWORD when authentication is required
+- SMTP_FROM
+- PUBLIC_BASE_URL=https://pulse.valkiria.tech
+
+The API refuses to start in production with public signup + mandatory verification if SMTP is incomplete.
+
+## Mercado Pago subscriptions
+
+PULSE uses server-side Mercado Pago Subscriptions. Configure:
+
+- MERCADOPAGO_ACCESS_TOKEN
+- MERCADOPAGO_WEBHOOK_SECRET
+- MERCADOPAGO_MODE=production
+
+Webhook URL:
+
+`https://pulse.valkiria.tech/api/v1/webhooks/mercadopago`
+
+The checkout remains disabled if the Access Token is absent. The API never returns either Mercado Pago secret to the browser.
+
+Before production, enable the Mercado Pago subscription and payment notification topics required by the integration and run the signed-webhook tests described in `docs/BILLING.md`.
