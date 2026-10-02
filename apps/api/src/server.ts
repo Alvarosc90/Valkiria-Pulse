@@ -12,6 +12,7 @@ import {
 import authRouter from "./auth/routes.js";
 import { requireAuth, requireTenantMatch } from "./auth/middleware.js";
 import { config } from "./config.js";
+import connectionsRouter from "./connections/routes.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
 import { HttpError } from "./http/httpError.js";
@@ -57,6 +58,7 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/connections", connectionsRouter);
 
 app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, next) => {
   try {
