@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:valky": "tsx watch scripts/dev-valky.ts",
@@ -16,7 +18,8 @@
     "db:check": "tsx scripts/db-check.ts",
     "db:infra:bootstrap": "tsx scripts/db-infra-bootstrap.ts",
     "db:seed:dev": "tsx scripts/seed-dev.ts",
-    "social:upsert": "tsx scripts/upsert-social-account.ts"
+    "social:upsert": "tsx scripts/upsert-social-account.ts",
+    "test": "node --import tsx --test src/billing/mercadoPago.test.ts"
   },
   "dependencies": {
     "@pulse/agents": "*",
