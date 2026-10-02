@@ -110,18 +110,9 @@ VALUES
   40
 );
 
-INSERT INTO saas_plan_prices
-(plan_key, currency, billing_interval, unit_amount_minor, status, display_order)
-VALUES
-('starter','ARS','monthly',2990000,'active',10),
-('professional','ARS','monthly',6990000,'active',20),
-('business','ARS','monthly',14990000,'active',30),
-('starter','USD','monthly',29,'active',10),
-('professional','USD','monthly',69,'active',20),
-('business','USD','monthly',149,'active',30),
-('starter','USD','yearly',290,'active',10),
-('professional','USD','yearly',690,'active',20),
-('business','USD','yearly',1490,'active',30);
+-- Prices are intentionally not seeded. Commercial pricing must be configured
+-- explicitly before checkout is enabled; the catalog can operate with
+-- "Consultar" while product limits and entitlements are validated.
 
 INSERT INTO saas_plan_entitlements
 (plan_key, entitlement_key, enabled, limit_value)
