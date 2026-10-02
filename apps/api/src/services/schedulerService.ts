@@ -126,12 +126,27 @@ export async function publishDue(limit = 10) {
 
     try {
       await connection.beginTransaction();
-      const [job] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO publication_jobs
-         (tenant_id, calendar_entry_id, social_account_id, status, attempt_count)
-         VALUES (?, ?, ?, 'processing', 1)`,
-        [row.tenant_id, row.id, row.social_account_id]
-      );
+      let job: ResultSetHeader;
+      try {
+        [job] = await connection.execute<ResultSetHeader>(
+          `INSERT INTO publication_jobs
+           (tenant_id, calendar_entry_id, social_account_id, status, attempt_count)
+           VALUES (?, ?, ?, 'processing', 1)`,
+          [row.tenant_id, row.id, row.social_account_id]
+        );
+      } catch (claimError) {
+        const code =
+          typeof claimError === "object" && claimError
+            ? String((claimError as { code?: unknown }).code ?? "")
+            : "";
+
+        if (code === "ER_DUP_ENTRY") {
+          await connection.rollback();
+          continue;
+        }
+        throw claimError;
+      }
+
       jobId = job.insertId;
       await connection.execute(
         "UPDATE calendar_entries SET status = 'processing' WHERE id = ?",
@@ -195,10 +210,12 @@ export async function publishDue(limit = 10) {
           [message, jobId]
         );
       }
-      await db.execute(
-        "UPDATE calendar_entries SET status = 'failed' WHERE id = ?",
-        [row.id]
-      );
+      if (jobId) {
+        await db.execute(
+          "UPDATE calendar_entries SET status = 'failed' WHERE id = ?",
+          [row.id]
+        );
+      }
       results.push({ calendarEntryId: row.id, jobId, status: "failed", error: message });
     } finally {
       connection.release();
