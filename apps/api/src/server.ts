@@ -27,6 +27,7 @@ import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
 import {
   loadBrandContext,
+  platformPerformanceSignals,
   recentPlatformPosts
 } from "./services/agentContextService.js";
 
@@ -100,11 +101,18 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
     });
 
     const brand = await loadBrandContext(tenantId, body.brandId);
-    const recentPosts = await recentPlatformPosts(
-      tenantId,
-      body.brandId,
-      body.entry.platform
-    );
+    const [recentPosts, performanceSignals] = await Promise.all([
+      recentPlatformPosts(
+        tenantId,
+        body.brandId,
+        body.entry.platform
+      ),
+      platformPerformanceSignals(
+        tenantId,
+        body.brandId,
+        body.entry.platform
+      )
+    ]);
 
     const generated = await pulseOrchestrator.generate(
       {
@@ -113,7 +121,7 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
         scheduledAt: body.entry.scheduledAt ?? new Date().toISOString()
       },
       brand,
-      { recentPosts }
+      { recentPosts, performanceSignals }
     );
 
     await incrementMonthlyUsage(
@@ -127,7 +135,8 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
       meta: {
         agentMode: agentRuntime.mode,
         model: agentRuntime.model,
-        recentPostsUsed: recentPosts.length
+        recentPostsUsed: recentPosts.length,
+        performanceSignalsUsed: performanceSignals.length
       }
     });
   } catch (error) {
