@@ -4,7 +4,7 @@ import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
 import type { PulseRole } from "../auth/types.js";
-import { issueSessionForUserTenant } from "../auth/service.js";
+import { issueSessionForUserTenant } from "../auth/externalSession.js";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
