@@ -40,5 +40,6 @@
 - [ ] Instagram insights permissions
 - [ ] TikTok stats permissions
 - [ ] LinkedIn organization analytics permissions
-- [ ] Unified reporting
-- [ ] Feedback loop from performance to future calendars
+- [x] Unified reporting foundation
+- [x] Editorial performance signal foundation
+- [ ] Inject approved analytics signals into future agent generations
