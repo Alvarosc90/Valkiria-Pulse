@@ -3,23 +3,22 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
-import {
-  InstagramAgent,
-  LinkedInAgent,
-  SocialOrchestrator,
-  TikTokAgent
-} from "@pulse/agents";
+import { z } from "zod";
+import { agentRuntime, pulseOrchestrator } from "./agents/runtime.js";
 import authRouter from "./auth/routes.js";
 import { requireAuth, requireTenantMatch } from "./auth/middleware.js";
 import { config } from "./config.js";
 import connectionsRouter from "./connections/routes.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
-import { HttpError } from "./http/httpError.js";
 import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
 import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
+import {
+  loadBrandContext,
+  recentPlatformPosts
+} from "./services/agentContextService.js";
 
 const app = express();
 
@@ -32,12 +31,6 @@ app.use(pinoHttp());
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 
-const orchestrator = new SocialOrchestrator([
-  new InstagramAgent(),
-  new TikTokAgent(),
-  new LinkedInAgent()
-]);
-
 app.get("/health", async (_req, res) => {
   try {
     await pingDb();
@@ -45,7 +38,9 @@ app.get("/health", async (_req, res) => {
       service: "valkiria-pulse-api",
       status: "ok",
       database: "ok",
-      agents: ["instagram", "tiktok", "linkedin"],
+      agents: agentRuntime.agents,
+      agentMode: agentRuntime.mode,
+      agentModel: agentRuntime.model,
       runtime: ["api", "worker"]
     });
   } catch {
@@ -62,25 +57,55 @@ app.use("/api/v1/connections", connectionsRouter);
 
 app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, next) => {
   try {
-    const { entry, brand } = req.body;
-    const tenantId = req.auth!.tenantId;
+    const body = z.object({
+      brandId: z.coerce.number().int().positive(),
+      entry: z.object({
+        id: z.string().default("preview"),
+        platform: z.enum(["instagram", "tiktok", "linkedin"]),
+        scheduledAt: z.string().optional(),
+        topic: z.string().min(1).max(255),
+        objective: z.string().max(255).optional(),
+        angle: z.string().max(255).optional(),
+        assetRefs: z.array(z.string()).default([]),
+        notes: z.string().max(10000).optional(),
+        platformContext: z.record(z.unknown()).optional(),
+        status: z.enum([
+          "draft",
+          "ready",
+          "scheduled",
+          "processing",
+          "published",
+          "failed"
+        ]).default("draft")
+      })
+    }).parse(req.body);
 
-    if (
-      (entry?.tenantId && String(entry.tenantId) !== tenantId) ||
-      (brand?.tenantId && String(brand.tenantId) !== tenantId)
-    ) {
-      throw new HttpError(
-        "Acceso cruzado entre empresas bloqueado",
-        403,
-        "TENANT_BOUNDARY_VIOLATION"
-      );
-    }
-
-    const generated = await orchestrator.generate(
-      { ...entry, tenantId },
-      { ...brand, tenantId }
+    const tenantId = Number(req.auth!.tenantId);
+    const brand = await loadBrandContext(tenantId, body.brandId);
+    const recentPosts = await recentPlatformPosts(
+      tenantId,
+      body.brandId,
+      body.entry.platform
     );
-    res.json({ data: generated });
+
+    const generated = await pulseOrchestrator.generate(
+      {
+        ...body.entry,
+        tenantId: String(tenantId),
+        scheduledAt: body.entry.scheduledAt ?? new Date().toISOString()
+      },
+      brand,
+      { recentPosts }
+    );
+
+    res.json({
+      data: generated,
+      meta: {
+        agentMode: agentRuntime.mode,
+        model: agentRuntime.model,
+        recentPostsUsed: recentPosts.length
+      }
+    });
   } catch (error) {
     next(error);
   }
