@@ -144,3 +144,67 @@ export async function logoutRequest() {
     setAccessToken(null);
   }
 }
+
+
+export async function signupRequest(input: {
+  displayName: string;
+  companyName: string;
+  brandName?: string;
+  email: string;
+  password: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
+}) {
+  const response = await fetch(`${API_URL}/api/v1/auth/signup`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.message ?? payload?.error ?? "No se pudo crear la cuenta");
+  }
+
+  if (payload?.accessToken) setAccessToken(payload.accessToken);
+  return payload;
+}
+
+export async function askPublicPulse(question: string) {
+  const response = await fetch(`${API_URL}/api/v1/public/assistant`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question })
+  });
+
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.message ?? payload?.error ?? "PULSE IA no está disponible");
+  }
+
+  return payload?.data?.answer as string | undefined;
+}
+
+export async function sendPublicContact(input: {
+  name: string;
+  company: string;
+  email: string;
+  phone?: string;
+  currentSystem?: string;
+  message?: string;
+  website?: string;
+}) {
+  const response = await fetch(`${API_URL}/api/v1/public/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.message ?? payload?.error ?? "No se pudo enviar la consulta");
+  }
+
+  return payload?.data;
+}

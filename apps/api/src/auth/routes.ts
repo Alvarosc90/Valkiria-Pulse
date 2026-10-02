@@ -5,6 +5,7 @@ import { config } from "../config.js";
 import { refreshCookieOptions } from "./cookie.js";
 import { requireAuth } from "./middleware.js";
 import { login, refreshAccess, revokeRefresh } from "./service.js";
+import { createTrialWorkspace } from "./signup.js";
 
 const router = Router();
 
@@ -16,11 +17,72 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
+const signupLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
+
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 90,
   standardHeaders: "draft-8",
   legacyHeaders: false
+});
+
+
+router.post("/signup", signupLimiter, async (req, res, next) => {
+  try {
+    const body = z.object({
+      displayName: z.string().trim().min(2).max(160),
+      companyName: z.string().trim().min(2).max(140),
+      brandName: z.string().trim().min(2).max(140).optional(),
+      email: z.string().trim().email().max(180),
+      password: z.string()
+        .min(10)
+        .max(128)
+        .regex(/[A-Za-z]/, "La contraseña debe incluir letras")
+        .regex(/[0-9]/, "La contraseña debe incluir al menos un número"),
+      acceptTerms: z.literal(true),
+      acceptPrivacy: z.literal(true)
+    }).parse(req.body);
+
+    const requestMeta = {
+      ip: req.ip,
+      userAgent: req.get("user-agent")
+    };
+
+    const created = await createTrialWorkspace({
+      ...body,
+      requestMeta
+    });
+
+    const result = await login({
+      email: body.email,
+      password: body.password,
+      tenantSlug: created.tenantSlug,
+      requestMeta
+    });
+
+    if (result.requiresTenantSelection) {
+      throw new Error("Unexpected tenant selection after signup");
+    }
+
+    res.cookie(config.AUTH_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
+    const { refreshToken: _hidden, ...safe } = result;
+
+    res.status(201).json({
+      ...safe,
+      trial: {
+        plan: "starter",
+        days: 14
+      },
+      legalVersion: created.legalVersion
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/login", loginLimiter, async (req, res, next) => {

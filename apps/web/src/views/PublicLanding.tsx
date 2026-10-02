@@ -1,9 +1,12 @@
+import { PublicContactForm } from "./PublicContactForm";
+import { PublicPulseAssistant } from "./PublicPulseAssistant";
+import type { LegalType } from "../legal";
+
 const PULSE_LOGO_SRC = "/assets/branding/4_VALKIRIA%20PULSE.png";
 
 const agents = [
   {
     key: "instagram",
-    badge: "IG",
     title: "Instagram Agent",
     subtitle: "Creatividad visual que inspira.",
     copy: "Piensa en piezas, captions, CTAs y memoria editorial propia para Instagram.",
@@ -11,7 +14,6 @@ const agents = [
   },
   {
     key: "tiktok",
-    badge: "TT",
     title: "TikTok Agent",
     subtitle: "Ideas que se vuelven tendencia.",
     copy: "Trabaja desde el hook, el ritmo, el guion y el video para crear contenido nativo.",
@@ -19,7 +21,6 @@ const agents = [
   },
   {
     key: "linkedin",
-    badge: "in",
     title: "LinkedIn Agent",
     subtitle: "Autoridad que genera oportunidades.",
     copy: "Construye contenido profesional, aprendizaje, producto y conversación B2B.",
@@ -28,11 +29,11 @@ const agents = [
 ];
 
 const featureStrip = [
-  ["✦", "3 agentes especializados", "uno por plataforma"],
-  ["◎", "Contexto separado", "sin mezclar memorias"],
-  ["▣", "Calendarios flexibles", "creá o importá Excel"],
-  ["↗", "De idea a publicación", "en un solo flujo"],
-  ["◔", "Analytics claros", "para aprender y mejorar"]
+  ["agents", "3 agentes especializados", "uno por plataforma"],
+  ["context", "Contexto separado", "sin mezclar memorias"],
+  ["calendar", "Calendarios flexibles", "creá o importá Excel"],
+  ["publish", "De idea a publicación", "en un solo flujo"],
+  ["assistant", "PULSE IA", "te acompaña desde la landing"]
 ];
 
 const networkContext = [
@@ -61,13 +62,31 @@ const flow = [
   ["05", "Publicar", "Los providers ejecutan y registran el resultado."]
 ];
 
-function SocialIcon({
-  network,
-  compact = false
-}: {
-  network: "instagram" | "tiktok" | "linkedin";
-  compact?: boolean;
-}) {
+const plans = [
+  {
+    name: "Inicial",
+    badge: "Prueba 14 días",
+    copy: "Para una marca que quiere ordenar calendario, agentes y conexiones.",
+    items: ["1 marca", "Hasta 3 cuentas sociales", "Calendario + Excel", "Brand Brain", "Aprobación manual"],
+    cta: "Empezar prueba"
+  },
+  {
+    name: "Profesional",
+    badge: "Más volumen",
+    copy: "Para equipos que necesitan colaboración, memoria editorial y biblioteca.",
+    items: ["Hasta 3 marcas", "Más cuentas sociales", "Biblioteca de medios", "Auditoría", "Memoria editorial"],
+    cta: "Consultar"
+  },
+  {
+    name: "Business",
+    badge: "Equipos",
+    copy: "Para operaciones multi-marca con más capacidad y aprobaciones.",
+    items: ["Hasta 10 marcas", "Aprobaciones de equipo", "Mayor capacidad", "Priority queue", "Analytics preparado"],
+    cta: "Consultar"
+  }
+];
+
+function SocialIcon({ network }: { network: "instagram" | "tiktok" | "linkedin" }) {
   if (network === "instagram") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -97,6 +116,25 @@ function SocialIcon({
       <path fill="currentColor" d="M11 10.2h2.6v1c.8-.9 1.8-1.35 3-1.35 2.45 0 3.4 1.55 3.4 4.15v3.4h-2.8v-3.17c0-1.27-.34-2.05-1.55-2.05-1.28 0-1.85.86-1.85 2.35v2.87H11v-7.2Z" />
     </svg>
   );
+}
+
+function FeatureIcon({ name }: { name: string }) {
+  const common = { viewBox: "0 0 24 24", "aria-hidden": true } as const;
+
+  if (name === "agents") {
+    return <svg {...common}><circle cx="7" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="17" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M2.5 19c.5-3.4 2.1-5 4.5-5s4 1.6 4.5 5M12.5 19c.5-3.4 2.1-5 4.5-5s4 1.6 4.5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
+  }
+  if (name === "context") {
+    return <svg {...common}><path d="M4 6h16M4 12h10M4 18h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="18" cy="12" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.8"/></svg>;
+  }
+  if (name === "calendar") {
+    return <svg {...common}><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M7 3v4M17 3v4M3.5 9h17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
+  }
+  if (name === "publish") {
+    return <svg {...common}><path d="M5 19 19 5M10 5h9v9" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+  }
+
+  return <svg {...common}><path d="M12 2.8c.8 4.2 2.7 6.1 6.9 6.9-4.2.8-6.1 2.7-6.9 6.9-.8-4.2-2.7-6.1-6.9-6.9 4.2-.8 6.1-2.7 6.9-6.9Z" fill="currentColor"/><path d="M19.2 15.4c.35 1.85 1.2 2.7 3.05 3.05-1.85.35-2.7 1.2-3.05 3.05-.35-1.85-1.2-2.7-3.05-3.05 1.85-.35 2.7-1.2 3.05-3.05Z" fill="currentColor" opacity=".65"/></svg>;
 }
 
 function SocialBadge({ network }: { network: "instagram" | "tiktok" | "linkedin" }) {
@@ -134,10 +172,7 @@ function DashboardPreview() {
               {agents.map((agent) => (
                 <div className={"preview-agent " + agent.key} key={agent.key}>
                   <span className="preview-agent-icon">
-                    <SocialIcon
-                      network={agent.key as "instagram" | "tiktok" | "linkedin"}
-                      compact
-                    />
+                    <SocialIcon network={agent.key as "instagram" | "tiktok" | "linkedin"} />
                   </span>
                   <div>
                     <strong>{agent.title}</strong>
@@ -183,11 +218,7 @@ function DashboardPreview() {
                   <span>Claims</span>
                   <span>CTAs</span>
                 </div>
-                <div className="brandbrain-bars">
-                  <i />
-                  <i />
-                  <i />
-                </div>
+                <div className="brandbrain-bars"><i /><i /><i /></div>
               </div>
             </div>
 
@@ -211,7 +242,15 @@ function DashboardPreview() {
   );
 }
 
-export function PublicLanding({ onLogin }: { onLogin: () => void }) {
+export function PublicLanding({
+  onLogin,
+  onSignup,
+  onLegal
+}: {
+  onLogin: () => void;
+  onSignup: () => void;
+  onLegal: (type: LegalType) => void;
+}) {
   return (
     <div className="pulse-landing">
       <header className="landing-header">
@@ -223,12 +262,13 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
           <a href="#producto">Producto</a>
           <a href="#agentes">Agentes IA</a>
           <a href="#contexto">Diferencia</a>
-          <a href="#flujo">Cómo funciona</a>
+          <a href="#planes">Planes</a>
+          <a href="#contacto">Contacto</a>
         </nav>
 
         <div className="landing-header-actions">
           <button className="landing-login" onClick={onLogin}>Iniciar sesión</button>
-          <button className="landing-primary compact" onClick={onLogin}>Comenzar gratis →</button>
+          <button className="landing-primary compact" onClick={onSignup}>Comenzar gratis →</button>
         </div>
       </header>
 
@@ -244,14 +284,14 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
             </p>
 
             <div className="landing-hero-actions">
-              <button className="landing-primary" onClick={onLogin}>Comenzar gratis →</button>
+              <button className="landing-primary" onClick={onSignup}>Comenzar gratis →</button>
               <a className="landing-secondary" href="#agentes">Ver cómo funciona</a>
             </div>
 
             <div className="landing-trust-row">
-              <span>✓ Sin tarjeta para empezar</span>
+              <span>✓ 14 días de prueba</span>
+              <span>✓ Sin tarjeta para crear la cuenta</span>
               <span>✓ Configuración guiada</span>
-              <span>✓ Diseñado para equipos</span>
             </div>
           </div>
 
@@ -261,7 +301,7 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
         <section className="landing-feature-strip" aria-label="Beneficios">
           {featureStrip.map(([icon, title, copy]) => (
             <article key={title}>
-              <span className="feature-strip-icon">{icon}</span>
+              <span className="feature-strip-icon"><FeatureIcon name={icon} /></span>
               <div><strong>{title}</strong><small>{copy}</small></div>
             </article>
           ))}
@@ -328,7 +368,7 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
               Importá tu calendario editorial en Excel o crealo directamente desde PULSE.
               Cada red conserva su estrategia sin obligarte a administrar tres herramientas.
             </p>
-            <button className="landing-primary" onClick={onLogin}>Crear mi calendario →</button>
+            <button className="landing-primary" onClick={onSignup}>Crear mi workspace →</button>
           </div>
 
           <div className="landing-file-stack" aria-hidden="true">
@@ -348,8 +388,8 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
             <span className="landing-pill soft">Medí lo que importa</span>
             <h2>Visibilidad total del rendimiento.</h2>
             <p>
-              Una vez habilitados los permisos de métricas, PULSE reúne el rendimiento
-              por plataforma y lo transforma en señales editoriales para el agente correcto.
+              Cuando cada red habilita los permisos de métricas, PULSE reúne el rendimiento
+              por plataforma y lo convierte en señales editoriales para el agente correcto.
             </p>
           </div>
 
@@ -379,19 +419,83 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
           </div>
         </section>
 
+        <section className="landing-section landing-pricing-section" id="planes">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">Empezá simple y escalá</span>
+            <h2>Planes pensados para crecer con tu operación.</h2>
+            <p>
+              El plan Inicial puede probarse durante 14 días. Los valores comerciales
+              definitivos se informan antes de contratar para que siempre veas condiciones vigentes.
+            </p>
+          </div>
+
+          <div className="landing-plan-grid">
+            {plans.map((plan, index) => (
+              <article className={index === 0 ? "landing-plan-card featured" : "landing-plan-card"} key={plan.name}>
+                <span>{plan.badge}</span>
+                <h3>{plan.name}</h3>
+                <p>{plan.copy}</p>
+                <strong>{index === 0 ? "14 días gratis" : "Precio a consultar"}</strong>
+                <ul>{plan.items.map((item) => <li key={item}>✓ {item}</li>)}</ul>
+                <button
+                  className={index === 0 ? "landing-primary" : "landing-secondary plan-button"}
+                  onClick={index === 0 ? onSignup : () => document.getElementById("contacto")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  {plan.cta}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-section landing-contact-section" id="contacto">
+          <div className="landing-contact-copy">
+            <span className="landing-pill soft">Hablemos de tu operación</span>
+            <h2>¿Querés ver PULSE aplicado a tu marca?</h2>
+            <p>
+              Contanos cómo trabajás hoy. La consulta queda registrada para que podamos
+              revisar tu caso, cantidad de marcas, redes y flujo editorial.
+            </p>
+            <div className="landing-contact-points">
+              <span><FeatureIcon name="agents" /> Revisión de tu flujo actual</span>
+              <span><FeatureIcon name="calendar" /> Migración desde Excel</span>
+              <span><FeatureIcon name="assistant" /> Configuración de agentes</span>
+            </div>
+          </div>
+          <PublicContactForm />
+        </section>
+
         <section className="landing-cta">
           <div>
             <span className="landing-pill inverted">Valkiria PULSE</span>
             <h2>Llevá tu contenido al siguiente nivel.</h2>
             <p>Una marca. Tres lenguajes. Un solo command center.</p>
           </div>
-          <button className="landing-cta-button" onClick={onLogin}>Comenzar gratis →</button>
+          <button className="landing-cta-button" onClick={onSignup}>Comenzar gratis →</button>
         </section>
       </main>
 
+      <PublicPulseAssistant />
+
       <footer className="landing-footer">
         <img src={PULSE_LOGO_SRC} alt="Valkiria PULSE" />
-        <span>Un desarrollo de Valkiria Project.</span>
+        <div className="landing-footer-content">
+          <div className="landing-footer-valkiria">
+            <span>Un desarrollo de</span>
+            <a href="https://valkiria.tech" target="_blank" rel="noopener noreferrer">
+              Valkiria Project ↗
+            </a>
+          </div>
+          <nav className="landing-footer-legal" aria-label="Políticas de Valkiria PULSE">
+            <button onClick={() => onLegal("terms")}>Términos</button>
+            <button onClick={() => onLegal("privacy")}>Privacidad</button>
+            <button onClick={() => onLegal("cookies")}>Cookies</button>
+            <button onClick={() => onLegal("security")}>Seguridad</button>
+            <button onClick={() => onLegal("data")}>Datos</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent("pulse:cookie-settings"))}>Preferencias de cookies</button>
+            <a href="mailto:consultas@valkiria.tech">Contacto</a>
+          </nav>
+        </div>
       </footer>
     </div>
   );

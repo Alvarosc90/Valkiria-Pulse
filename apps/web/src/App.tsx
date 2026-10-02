@@ -24,6 +24,10 @@ import { BillingView } from "./views/BillingView";
 import { AnalyticsView } from "./views/AnalyticsView";
 import { ConnectionOnboarding } from "./views/ConnectionOnboarding";
 import { PublicLanding } from "./views/PublicLanding";
+import { LegalPage } from "./views/LegalPage";
+import { SignupScreen } from "./views/SignupScreen";
+import { CookieConsent } from "./views/CookieConsent";
+import { LEGAL_BY_PATH, LEGAL_PATHS, type LegalType } from "./legal";
 
 type WorkspaceView =
   | "overview"
@@ -79,6 +83,7 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(
     () => new URLSearchParams(window.location.search).get("login") === "1"
   );
+  const [publicPath, setPublicPath] = useState(() => window.location.pathname);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brandId, setBrandId] = useState<number | null>(null);
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -102,11 +107,35 @@ export default function App() {
 
   function openLogin() {
     setShowLogin(true);
+    setPublicPath("/");
     window.history.pushState({}, "", "/?login=1");
+  }
+
+  function openSignup() {
+    setShowLogin(false);
+    setPublicPath("/registro");
+    window.history.pushState({}, "", "/registro");
+  }
+
+  function openLegal(type: LegalType) {
+    setShowLogin(false);
+    const path = LEGAL_PATHS[type];
+    setPublicPath(path);
+    window.history.pushState({}, "", path);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }
 
   function backToLanding() {
     setShowLogin(false);
+    setPublicPath("/");
+    window.history.replaceState({}, "", "/");
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }
+
+  function authenticated(nextAuth: AuthContext) {
+    setAuth(nextAuth);
+    setShowLogin(false);
+    setPublicPath("/");
     window.history.replaceState({}, "", "/");
   }
 
@@ -179,6 +208,7 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      setPublicPath(window.location.pathname);
       setShowLogin(
         new URLSearchParams(window.location.search).get("login") === "1"
       );
@@ -311,6 +341,7 @@ export default function App() {
     await logoutRequest();
     setAuth(null);
     setShowLogin(false);
+    setPublicPath("/");
     setBrands([]);
     setAccounts([]);
     setEntries([]);
@@ -331,10 +362,43 @@ export default function App() {
     );
   }
 
+  const legalType = LEGAL_BY_PATH[publicPath];
+
+  if (legalType) {
+    return <LegalPage type={legalType} onBack={backToLanding} />;
+  }
+
   if (!auth) {
-    return showLogin
-      ? <LoginScreen onAuthenticated={setAuth} onBack={backToLanding} />
-      : <PublicLanding onLogin={openLogin} />;
+    if (publicPath === "/registro") {
+      return (
+        <SignupScreen
+          onAuthenticated={authenticated}
+          onBack={backToLanding}
+          onLegal={(type) => window.open(LEGAL_PATHS[type], "_blank", "noopener,noreferrer")}
+        />
+      );
+    }
+
+    if (showLogin) {
+      return (
+        <LoginScreen
+          onAuthenticated={authenticated}
+          onBack={backToLanding}
+          onSignup={openSignup}
+        />
+      );
+    }
+
+    return (
+      <>
+        <PublicLanding
+          onLogin={openLogin}
+          onSignup={openSignup}
+          onLegal={openLegal}
+        />
+        <CookieConsent onOpenCookies={() => openLegal("cookies")} />
+      </>
+    );
   }
 
   const showAudit = auth.role === "owner" || auth.role === "admin";
@@ -653,10 +717,12 @@ export default function App() {
 
 function LoginScreen({
   onAuthenticated,
-  onBack
+  onBack,
+  onSignup
 }: {
   onAuthenticated: (auth: AuthContext) => void;
   onBack: () => void;
+  onSignup: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -764,6 +830,9 @@ function LoginScreen({
         )}
 
         {error && <div className="login-error">{error}</div>}
+        <button className="login-signup-link" onClick={onSignup}>
+          ¿Todavía no tenés cuenta? Crear prueba de 14 días
+        </button>
         <small className="login-footnote">
           Los tokens sociales se mantienen cifrados y nunca se exponen a los agentes.
         </small>

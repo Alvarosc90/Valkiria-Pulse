@@ -25,6 +25,7 @@ import calendarsRouter from "./routes/calendars.js";
 import mediaRouter from "./routes/media.js";
 import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
+import publicRouter from "./routes/public.js";
 import {
   loadBrandContext,
   platformPerformanceSignals,
@@ -63,6 +64,7 @@ app.get("/health", async (_req, res) => {
   }
 });
 
+app.use("/api/v1/public", publicRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/connections", connectionsRouter);
 app.use("/api/v1/integrations", integrationsRouter);
