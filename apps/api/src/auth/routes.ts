@@ -2,6 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { config } from "../config.js";
+import { refreshCookieOptions } from "./cookie.js";
 import { requireAuth } from "./middleware.js";
 import { login, refreshAccess, revokeRefresh } from "./service.js";
 
@@ -21,16 +22,6 @@ const refreshLimiter = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false
 });
-
-function cookieOptions() {
-  return {
-    httpOnly: true,
-    secure: config.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/api/v1/auth",
-    maxAge: config.AUTH_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000
-  };
-}
 
 router.post("/login", loginLimiter, async (req, res, next) => {
   try {
@@ -53,7 +44,7 @@ router.post("/login", loginLimiter, async (req, res, next) => {
       return;
     }
 
-    res.cookie(config.AUTH_REFRESH_COOKIE, result.refreshToken, cookieOptions());
+    res.cookie(config.AUTH_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
     const { refreshToken: _hidden, ...safe } = result;
     res.json(safe);
   } catch (error) {
@@ -74,7 +65,7 @@ router.post("/refresh", refreshLimiter, async (req, res, next) => {
       userAgent: req.get("user-agent")
     });
 
-    res.cookie(config.AUTH_REFRESH_COOKIE, result.refreshToken, cookieOptions());
+    res.cookie(config.AUTH_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
     res.json({ accessToken: result.accessToken });
   } catch (error) {
     next(error);
@@ -85,7 +76,7 @@ router.post("/logout", async (req, res, next) => {
   try {
     const token = req.cookies?.[config.AUTH_REFRESH_COOKIE] as string | undefined;
     await revokeRefresh(token);
-    res.clearCookie(config.AUTH_REFRESH_COOKIE, cookieOptions());
+    res.clearCookie(config.AUTH_REFRESH_COOKIE, refreshCookieOptions());
     res.status(204).end();
   } catch (error) {
     next(error);
