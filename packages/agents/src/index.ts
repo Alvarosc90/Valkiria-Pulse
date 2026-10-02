@@ -7,9 +7,14 @@ import type {
 } from "@pulse/contracts";
 import type { AgentModel } from "./model.js";
 import { platformSystemPrompt, platformUserPrompt } from "./prompts.js";
+import { nearestRecentPost } from "./similarity.js";
 
 export type { AgentModel, AgentModelRequest } from "./model.js";
 export { platformSystemPrompt, platformUserPrompt } from "./prompts.js";
+export { nearestRecentPost, textSimilarity } from "./similarity.js";
+
+const RETRY_SIMILARITY = 0.62;
+const BLOCK_SIMILARITY = 0.78;
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -43,18 +48,62 @@ abstract class BasePlatformAgent implements PlatformAgent {
     context?: AgentGenerationContext
   ): Promise<GeneratedPost> {
     if (entry.platform !== this.platform) {
-      throw new Error(`Expected ${this.platform} entry, received ${entry.platform}`);
+      throw new Error(
+        "Expected " + this.platform + " entry, received " + entry.platform
+      );
     }
 
     if (!this.model) return this.fallback(entry, brand);
 
-    const output = await this.model.generateJson({
+    const request = {
       platform: this.platform,
       systemPrompt: platformSystemPrompt(this.platform),
       userPrompt: platformUserPrompt(entry, brand, context)
+    };
+
+    const firstOutput = await this.model.generateJson(request);
+    const firstPost = this.fromModel(firstOutput, entry, brand);
+    const recentPosts = context?.recentPosts ?? [];
+    const firstNearest = nearestRecentPost(firstPost.caption, recentPosts);
+
+    if (!recentPosts.length || firstNearest.similarity < RETRY_SIMILARITY) {
+      return {
+        ...firstPost,
+        metadata: {
+          ...firstPost.metadata,
+          nearestRecentSimilarity: firstNearest.similarity
+        }
+      };
+    }
+
+    const retryOutput = await this.model.generateJson({
+      ...request,
+      userPrompt:
+        request.userPrompt +
+        "\n\nREGENERACION_OBLIGATORIA:\n" +
+        "La primera propuesta resulto demasiado parecida a una publicacion reciente. " +
+        "Cambia apertura, estructura, vocabulario y enfoque. No reutilices este texto:\n" +
+        firstNearest.text
     });
 
-    return this.fromModel(output, entry, brand);
+    const retryPost = this.fromModel(retryOutput, entry, brand);
+    const retryNearest = nearestRecentPost(retryPost.caption, recentPosts);
+
+    if (retryNearest.similarity >= BLOCK_SIMILARITY) {
+      throw new Error(
+        "Agent output blocked as near-duplicate. Similarity=" +
+        retryNearest.similarity.toFixed(3)
+      );
+    }
+
+    return {
+      ...retryPost,
+      metadata: {
+        ...retryPost.metadata,
+        regeneratedForSimilarity: true,
+        nearestRecentSimilarity: retryNearest.similarity
+      }
+    };
   }
 
   protected abstract fallback(
@@ -220,7 +269,7 @@ export class SocialOrchestrator {
     context?: AgentGenerationContext
   ): Promise<GeneratedPost> {
     const agent = this.agents.get(entry.platform);
-    if (!agent) throw new Error(`No agent registered for ${entry.platform}`);
+    if (!agent) throw new Error("No agent registered for " + entry.platform);
     return agent.create(entry, brand, context);
   }
 }
