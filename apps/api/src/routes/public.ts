@@ -3,6 +3,7 @@ import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { db } from "../db.js";
 import { askPublicPulse } from "../public/publicAssistant.js";
+import { commercialLeadEmail, isMailConfigured } from "../services/mailService.js";
 
 const router = Router();
 
@@ -63,6 +64,17 @@ router.post("/contact", contactLimiter, async (req, res, next) => {
         body.message || null
       ]
     );
+
+    if (isMailConfigured()) {
+      void commercialLeadEmail({
+        name: body.name,
+        company: body.company,
+        email: body.email.toLowerCase(),
+        phone: body.phone || null,
+        currentSystem: body.currentSystem || null,
+        message: body.message || null
+      }).catch(() => undefined);
+    }
 
     res.status(201).json({
       data: {
