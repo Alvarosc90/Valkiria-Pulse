@@ -34,8 +34,16 @@ export interface CalendarEntry {
   status: PublicationStatus;
 }
 
+export interface PerformanceSignal {
+  key: string;
+  value: number;
+  sampleSize: number;
+  metadata?: Record<string, unknown>;
+}
+
 export interface AgentGenerationContext {
   recentPosts?: string[];
+  performanceSignals?: PerformanceSignal[];
 }
 
 export interface GeneratedPost {
