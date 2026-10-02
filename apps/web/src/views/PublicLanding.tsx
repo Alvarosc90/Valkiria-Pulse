@@ -1,48 +1,169 @@
 const PULSE_LOGO_SRC = "/assets/branding/4_VALKIRIA%20PULSE.png";
 
-const networks = [
+const agents = [
   {
     key: "instagram",
-    name: "Instagram",
-    eyebrow: "Visual-first",
-    copy: "Piensa en pieza, caption, estética y CTA para Instagram. Conserva su propia memoria editorial."
+    badge: "IG",
+    title: "Instagram Agent",
+    subtitle: "Creatividad visual que inspira.",
+    copy: "Piensa en piezas, captions, CTAs y memoria editorial propia para Instagram.",
+    chips: ["Reels", "Historias", "Posts"]
   },
   {
     key: "tiktok",
-    name: "TikTok",
-    eyebrow: "Hook-first",
-    copy: "Trabaja desde el video: hook, ritmo, guion, duración y contexto nativo de TikTok."
+    badge: "TT",
+    title: "TikTok Agent",
+    subtitle: "Ideas que se vuelven tendencia.",
+    copy: "Trabaja desde el hook, el ritmo, el guion y el video para crear contenido nativo.",
+    chips: ["Hooks", "Video", "Ritmo"]
   },
   {
     key: "linkedin",
-    name: "LinkedIn",
-    eyebrow: "Professional-first",
-    copy: "Construye contexto profesional, aprendizaje, producto y conversación sin sonar como otra red."
+    badge: "in",
+    title: "LinkedIn Agent",
+    subtitle: "Autoridad que genera oportunidades.",
+    copy: "Construye contenido profesional, aprendizaje, producto y conversación B2B.",
+    chips: ["Posts", "Carrusel", "Insights"]
   }
 ];
 
-const differentiators = [
+const featureStrip = [
+  ["✦", "3 agentes especializados", "uno por plataforma"],
+  ["◎", "Contexto separado", "sin mezclar memorias"],
+  ["▣", "Calendarios flexibles", "creá o importá Excel"],
+  ["↗", "De idea a publicación", "en un solo flujo"],
+  ["◔", "Analytics claros", "para aprender y mejorar"]
+];
+
+const networkContext = [
   {
-    number: "01",
-    title: "Brand Brain compartido",
-    copy: "La marca, sus productos, tono, claims aprobados y límites viven en una sola fuente de verdad."
+    key: "instagram",
+    title: "Instagram",
+    items: ["Tono visual y aspiracional", "Comunidad y cercanía", "Reels, historias y posts", "Hashtags y tendencias"]
   },
   {
-    number: "02",
-    title: "Memoria separada por red",
-    copy: "Cada agente recuerda su propio historial para reducir repeticiones sin mezclar Instagram, TikTok y LinkedIn."
+    key: "tiktok",
+    title: "TikTok",
+    items: ["Tono creativo y auténtico", "Entretenimiento y velocidad", "Videos cortos y hooks", "Tendencias y sonido"]
   },
   {
-    number: "03",
-    title: "Orquestación, no copia y pega",
-    copy: "Una campaña puede tener un objetivo común, pero cada red recibe una ejecución pensada desde cero para su contexto."
-  },
-  {
-    number: "04",
-    title: "Aprende de resultados",
-    copy: "Las métricas vuelven como señales editoriales a la red correcta, sin contaminar el contexto de las demás."
+    key: "linkedin",
+    title: "LinkedIn",
+    items: ["Tono profesional y confiable", "Valor y conocimiento", "Posts, carruseles y artículos", "Industria y casos de uso"]
   }
 ];
+
+const flow = [
+  ["01", "Idear", "El objetivo de campaña entra una sola vez."],
+  ["02", "Crear", "Cada agente produce para su propia red."],
+  ["03", "Aprobar", "Revisás contenido y assets en un mismo lugar."],
+  ["04", "Programar", "PULSE organiza cada calendario editorial."],
+  ["05", "Publicar", "Los providers ejecutan y registran el resultado."]
+];
+
+function SocialBadge({ network }: { network: "instagram" | "tiktok" | "linkedin" }) {
+  const labels = { instagram: "IG", tiktok: "TT", linkedin: "in" };
+  return <span className={"landing-social-badge " + network}>{labels[network]}</span>;
+}
+
+function DashboardPreview() {
+  return (
+    <div className="landing-dashboard-stage" aria-hidden="true">
+      <div className="landing-social-float float-instagram"><SocialBadge network="instagram" /></div>
+      <div className="landing-social-float float-tiktok"><SocialBadge network="tiktok" /></div>
+      <div className="landing-social-float float-linkedin"><SocialBadge network="linkedin" /></div>
+
+      <div className="landing-dashboard-window">
+        <div className="preview-topbar">
+          <div className="preview-brand-dot" />
+          <strong>PULSE Command Center</strong>
+          <span>3 agentes activos</span>
+        </div>
+
+        <div className="preview-body">
+          <aside className="preview-sidebar">
+            <span className="preview-nav active">Resumen</span>
+            <span className="preview-nav">Calendarios</span>
+            <span className="preview-nav">Agentes</span>
+            <span className="preview-nav">Analytics</span>
+          </aside>
+
+          <div className="preview-content">
+            <div className="preview-agent-row">
+              {agents.map((agent) => (
+                <div className={"preview-agent " + agent.key} key={agent.key}>
+                  <span>{agent.badge}</span>
+                  <div>
+                    <strong>{agent.title}</strong>
+                    <small>online</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="preview-grid">
+              <div className="preview-calendar">
+                <div className="preview-panel-title">
+                  <strong>Calendario de publicaciones</strong>
+                  <span>Octubre</span>
+                </div>
+                <div className="calendar-days">
+                  {[1,2,3,4,5].map((day) => (
+                    <div key={day} className="calendar-day">
+                      <span>{day + 6}</span>
+                      <i className={day === 1 ? "ig" : day === 2 ? "tt" : day === 3 ? "li" : ""} />
+                    </div>
+                  ))}
+                </div>
+                <div className="preview-schedule-line">
+                  <span className="schedule-dot ig" />
+                  <strong>Producto en acción</strong>
+                  <small>10:30</small>
+                </div>
+                <div className="preview-schedule-line">
+                  <span className="schedule-dot tt" />
+                  <strong>Hook de comunidad</strong>
+                  <small>14:00</small>
+                </div>
+              </div>
+
+              <div className="preview-brandbrain">
+                <div className="preview-panel-title">
+                  <strong>Brand Brain</strong>
+                  <span>sincronizado</span>
+                </div>
+                <div className="brandbrain-chip-row">
+                  <span>Tono cercano</span>
+                  <span>Claims</span>
+                  <span>CTAs</span>
+                </div>
+                <div className="brandbrain-bars">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              </div>
+            </div>
+
+            <div className="preview-metrics">
+              <div><span>Impresiones</span><strong>125K</strong><small>+32%</small></div>
+              <div><span>Engagement</span><strong>8.7K</strong><small>+28%</small></div>
+              <div><span>Seguidores</span><strong>3.2K</strong><small>+41%</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="landing-result-card">
+        <span>↗</span>
+        <div>
+          <strong>Contenido que conecta.</strong>
+          <small>Resultados que se pueden leer.</small>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function PublicLanding({ onLogin }: { onLogin: () => void }) {
   return (
@@ -53,151 +174,172 @@ export function PublicLanding({ onLogin }: { onLogin: () => void }) {
         </a>
 
         <nav className="landing-nav" aria-label="Navegación principal">
-          <a href="#diferencia">La diferencia</a>
-          <a href="#agentes">Agentes</a>
+          <a href="#producto">Producto</a>
+          <a href="#agentes">Agentes IA</a>
+          <a href="#contexto">Diferencia</a>
           <a href="#flujo">Cómo funciona</a>
         </nav>
 
-        <button className="landing-login" onClick={onLogin}>
-          Entrar
-        </button>
+        <div className="landing-header-actions">
+          <button className="landing-login" onClick={onLogin}>Iniciar sesión</button>
+          <button className="landing-primary compact" onClick={onLogin}>Comenzar gratis →</button>
+        </div>
       </header>
 
       <main>
-        <section className="landing-hero">
+        <section className="landing-hero" id="producto">
           <div className="landing-hero-copy">
-            <span className="landing-kicker">Social intelligence · por plataforma</span>
+            <span className="landing-pill">✦ Plataforma de contenido con IA</span>
             <h1>Cada red.<br /><span>Su propio pulso.</span></h1>
             <p>
-              PULSE coordina agentes especializados para Instagram, TikTok y LinkedIn.
-              Comparten la identidad de tu marca, pero cada uno piensa, recuerda y
-              crea según la lógica de su propia red.
+              Gestioná Instagram, TikTok y LinkedIn con agentes de IA especializados.
+              Planificá, creá, aprobá y publicá contenido pensado para cada plataforma,
+              con su propio contexto.
             </p>
 
             <div className="landing-hero-actions">
-              <button className="landing-primary" onClick={onLogin}>
-                Empezar con PULSE
-              </button>
-              <a className="landing-secondary" href="#diferencia">
-                Ver cómo funciona
-              </a>
+              <button className="landing-primary" onClick={onLogin}>Comenzar gratis →</button>
+              <a className="landing-secondary" href="#agentes">Ver cómo funciona</a>
             </div>
 
-            <div className="landing-proof">
-              <span>3 agentes especializados</span>
-              <span>1 Brand Brain</span>
-              <span>1 operación</span>
+            <div className="landing-trust-row">
+              <span>✓ Sin tarjeta para empezar</span>
+              <span>✓ Configuración guiada</span>
+              <span>✓ Diseñado para equipos</span>
             </div>
           </div>
 
-          <div className="landing-orbit-card" aria-hidden="true">
-            <div className="orbit-core">
-              <span className="orbit-core-label">Brand Brain</span>
-              <strong>PULSE</strong>
-            </div>
-            <div className="orbit-node orbit-node-instagram">
-              <span>IG</span>
-              <strong>Instagram</strong>
-              <small>Visual · caption · CTA</small>
-            </div>
-            <div className="orbit-node orbit-node-tiktok">
-              <span>TT</span>
-              <strong>TikTok</strong>
-              <small>Hook · video · ritmo</small>
-            </div>
-            <div className="orbit-node orbit-node-linkedin">
-              <span>LI</span>
-              <strong>LinkedIn</strong>
-              <small>Contexto · autoridad</small>
-            </div>
-          </div>
+          <DashboardPreview />
         </section>
 
-        <section className="landing-section" id="diferencia">
-          <div className="landing-section-heading">
-            <span className="landing-kicker">La diferencia</span>
-            <h2>No es publicar lo mismo tres veces.</h2>
-            <p>
-              PULSE está diseñado para que una marca sea coherente sin volverse idéntica
-              en todas sus redes.
-            </p>
-          </div>
-
-          <div className="difference-grid">
-            {differentiators.map((item) => (
-              <article key={item.number}>
-                <span>{item.number}</span>
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-              </article>
-            ))}
-          </div>
+        <section className="landing-feature-strip" aria-label="Beneficios">
+          {featureStrip.map(([icon, title, copy]) => (
+            <article key={title}>
+              <span className="feature-strip-icon">{icon}</span>
+              <div><strong>{title}</strong><small>{copy}</small></div>
+            </article>
+          ))}
         </section>
 
-        <section className="landing-section" id="agentes">
-          <div className="landing-section-heading split">
-            <div>
-              <span className="landing-kicker">Tres redes. Tres cerebros.</span>
-              <h2>Un agente especializado para cada plataforma.</h2>
-            </div>
+        <section className="landing-section landing-agents-section" id="agentes">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">3 agentes · 3 especialistas · 1 plataforma</span>
+            <h2>Agentes de IA especializados<br />en cada red social.</h2>
             <p>
-              La identidad de marca se comparte. La estrategia editorial, la memoria
-              reciente y las señales de rendimiento se mantienen separadas.
+              Cada plataforma tiene su propio lenguaje, audiencia y oportunidades.
+              PULSE mantiene la identidad de tu marca, pero deja que cada agente piense
+              de forma nativa.
             </p>
           </div>
 
           <div className="landing-network-grid">
-            {networks.map((network) => (
-              <article className={"landing-network-card " + network.key} key={network.key}>
-                <div>
-                  <span className="landing-network-icon">
-                    {network.key === "instagram" ? "IG" : network.key === "tiktok" ? "TT" : "LI"}
-                  </span>
-                  <span className="landing-network-eyebrow">{network.eyebrow}</span>
+            {agents.map((agent) => (
+              <article className={"landing-network-card " + agent.key} key={agent.key}>
+                <div className="network-card-head">
+                  <SocialBadge network={agent.key as "instagram" | "tiktok" | "linkedin"} />
+                  <span>{agent.subtitle}</span>
                 </div>
-                <h3>{network.name} Agent</h3>
-                <p>{network.copy}</p>
+                <h3>{agent.title}</h3>
+                <p>{agent.copy}</p>
+                <div className="network-chip-row">
+                  {agent.chips.map((chip) => <span key={chip}>{chip}</span>)}
+                </div>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="landing-section landing-flow" id="flujo">
-          <div className="landing-section-heading">
-            <span className="landing-kicker">Simple para usar. Potente por dentro.</span>
-            <h2>Conectás una vez. PULSE sigue.</h2>
+        <section className="landing-section landing-context-section" id="contexto">
+          <div className="landing-context-copy">
+            <span className="landing-pill soft">Inteligencia que entiende las diferencias</span>
+            <h2>Cada red, su propio contexto.</h2>
+            <p>
+              PULSE comparte un Brand Brain, pero mantiene separados el tono,
+              la memoria editorial, los objetivos y las señales de rendimiento de cada red.
+            </p>
           </div>
 
-          <div className="landing-flow-grid">
-            <article>
-              <span>01</span>
-              <h3>Conectá tus redes</h3>
-              <p>Autorizás cada cuenta una única vez. PULSE guarda las credenciales cifradas y renueva accesos cuando la plataforma lo permite.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Definí tu marca</h3>
-              <p>Productos, tono, claims, CTAs y restricciones quedan centralizados en Brand Brain.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Planificá o importá</h3>
-              <p>Creá contenido desde PULSE o importá calendarios. Cada red mantiene su propio enfoque.</p>
-            </article>
-            <article>
-              <span>04</span>
-              <h3>Aprobá y publicá</h3>
-              <p>Revisás cuando querés. El scheduler y los providers se encargan de la ejecución técnica.</p>
-            </article>
+          <div className="landing-context-board">
+            {networkContext.map((network) => (
+              <article key={network.key}>
+                <div>
+                  <SocialBadge network={network.key as "instagram" | "tiktok" | "linkedin"} />
+                  <strong>{network.title}</strong>
+                </div>
+                <ul>
+                  {network.items.map((item) => <li key={item}>✓ {item}</li>)}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-section landing-calendar-section">
+          <div className="landing-calendar-copy">
+            <span className="landing-pill soft">Planificá con lo que ya tenés</span>
+            <h2>Calendarios de contenido<br />para cada red.</h2>
+            <p>
+              Importá tu calendario editorial en Excel o crealo directamente desde PULSE.
+              Cada red conserva su estrategia sin obligarte a administrar tres herramientas.
+            </p>
+            <button className="landing-primary" onClick={onLogin}>Crear mi calendario →</button>
+          </div>
+
+          <div className="landing-file-stack" aria-hidden="true">
+            <div className="file-row instagram"><SocialBadge network="instagram" /><div><strong>Instagram.xlsx</strong><span>Calendario importado</span></div><b>✓</b></div>
+            <div className="file-row tiktok"><SocialBadge network="tiktok" /><div><strong>TikTok.xlsx</strong><span>Calendario importado</span></div><b>✓</b></div>
+            <div className="file-row linkedin"><SocialBadge network="linkedin" /><div><strong>LinkedIn.xlsx</strong><span>Calendario importado</span></div><b>✓</b></div>
+            <div className="excel-drop">
+              <span>▦</span>
+              <strong>Arrastrá tu Excel</strong>
+              <small>o crealo con PULSE</small>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-section landing-analytics-section">
+          <div className="landing-section-heading">
+            <span className="landing-pill soft">Medí lo que importa</span>
+            <h2>Visibilidad total del rendimiento.</h2>
+            <p>
+              Una vez habilitados los permisos de métricas, PULSE reúne el rendimiento
+              por plataforma y lo transforma en señales editoriales para el agente correcto.
+            </p>
+          </div>
+
+          <div className="landing-metrics-row">
+            <article><span>◎</span><small>Alcance</small><strong>125.4K</strong><b>+32%</b></article>
+            <article><span>♡</span><small>Engagement</small><strong>8.7K</strong><b>+28%</b></article>
+            <article><span>♙</span><small>Nuevos seguidores</small><strong>3.2K</strong><b>+41%</b></article>
+            <article><span>↗</span><small>Mejor contenido</small><strong>Reels</strong><b>+56%</b></article>
+          </div>
+        </section>
+
+        <section className="landing-section landing-flow" id="flujo">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">Un flujo simple, poderoso</span>
+            <h2>De la idea a la publicación.<br />Sin complicaciones.</h2>
+          </div>
+
+          <div className="landing-flow-line">
+            {flow.map(([number, title, copy], index) => (
+              <article key={number}>
+                <div className="flow-number">{number}</div>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+                {index < flow.length - 1 && <span className="flow-connector">→</span>}
+              </article>
+            ))}
           </div>
         </section>
 
         <section className="landing-cta">
-          <span className="landing-kicker">Valkiria PULSE</span>
-          <h2>Una marca. Tres lenguajes. Un solo command center.</h2>
-          <button className="landing-primary" onClick={onLogin}>
-            Entrar a PULSE
-          </button>
+          <div>
+            <span className="landing-pill inverted">Valkiria PULSE</span>
+            <h2>Llevá tu contenido al siguiente nivel.</h2>
+            <p>Una marca. Tres lenguajes. Un solo command center.</p>
+          </div>
+          <button className="landing-cta-button" onClick={onLogin}>Comenzar gratis →</button>
         </section>
       </main>
 
