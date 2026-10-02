@@ -4,6 +4,7 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { PULSE_LEGAL_VERSION } from "@pulse/contracts";
 import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
+import { assertPasswordSafe } from "./passwordPolicy.js";
 
 function slugBase(value: string) {
   return value
@@ -52,6 +53,7 @@ export async function createTrialWorkspace(input: {
   }
 
   const email = input.email.trim().toLowerCase();
+  assertPasswordSafe(input.password, email);
   const [existing] = await db.query<RowDataPacket[]>(
     "SELECT id FROM users WHERE email = ? LIMIT 1",
     [email]
@@ -82,8 +84,8 @@ export async function createTrialWorkspace(input: {
 
     const [userInsert] = await connection.execute<ResultSetHeader>(
       `INSERT INTO users
-       (email, password_hash, display_name, active)
-       VALUES (?, ?, ?, 1)`,
+       (email, password_hash, display_name, active, email_verified_at, password_changed_at)
+       VALUES (?, ?, ?, 1, NULL, UTC_TIMESTAMP())`,
       [email, passwordHash, input.displayName.trim()]
     );
 

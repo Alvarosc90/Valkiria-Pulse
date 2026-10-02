@@ -3,6 +3,29 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 let accessToken: string | null = null;
 let refreshPromise: Promise<boolean> | null = null;
 
+export class ApiClientError extends Error {
+  code?: string;
+  status: number;
+  data?: unknown;
+
+  constructor(message: string, status: number, code?: string, data?: unknown) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = status;
+    this.code = code;
+    this.data = data;
+  }
+}
+
+function apiError(response: Response, payload: any, fallback: string) {
+  return new ApiClientError(
+    payload?.message ?? payload?.error ?? fallback,
+    response.status,
+    payload?.code ?? payload?.error,
+    payload
+  );
+}
+
 export function setAccessToken(value: string | null) {
   accessToken = value;
 }
@@ -31,7 +54,7 @@ export async function loginRequest(input: {
 
   const payload = await parseResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.message ?? payload?.error ?? "No se pudo iniciar sesion");
+    throw apiError(response, payload, "No se pudo iniciar sesión");
   }
 
   if (!payload.requiresTenantSelection && payload.accessToken) {
@@ -164,7 +187,7 @@ export async function signupRequest(input: {
 
   const payload = await parseResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.message ?? payload?.error ?? "No se pudo crear la cuenta");
+    throw apiError(response, payload, "No se pudo crear la cuenta");
   }
 
   if (payload?.accessToken) setAccessToken(payload.accessToken);
@@ -207,4 +230,89 @@ export async function sendPublicContact(input: {
   }
 
   return payload?.data;
+}
+
+
+export async function verifyEmailRequest(token: string) {
+  const response = await fetch(`${API_URL}/api/v1/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token })
+  });
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw apiError(response, payload, "No se pudo verificar el email");
+  }
+  return payload?.data;
+}
+
+export async function resendVerificationRequest(email: string) {
+  const response = await fetch(`${API_URL}/api/v1/auth/verification/resend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw apiError(response, payload, "No se pudo reenviar la verificación");
+  }
+  return payload?.data;
+}
+
+export async function requestPasswordReset(email: string) {
+  const response = await fetch(`${API_URL}/api/v1/auth/password/forgot`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw apiError(response, payload, "No se pudo iniciar la recuperación");
+  }
+  return payload?.data;
+}
+
+export async function resetPasswordRequest(token: string, password: string) {
+  const response = await fetch(`${API_URL}/api/v1/auth/password/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password })
+  });
+  const payload = await parseResponse(response);
+  if (!response.ok) {
+    throw apiError(response, payload, "No se pudo cambiar la contraseña");
+  }
+  return payload?.data;
+}
+
+export async function changePasswordRequest(currentPassword: string, nextPassword: string) {
+  return apiJson<{ data: { changed: boolean } }>("/api/v1/auth/password/change", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, nextPassword })
+  });
+}
+
+export async function listSessionsRequest() {
+  return apiJson<{ data: Array<{
+    id: string;
+    ipAddress: string | null;
+    userAgent: string | null;
+    createdAt: string;
+    lastUsedAt: string;
+    expiresAt: string;
+  }> }>("/api/v1/auth/sessions");
+}
+
+export async function revokeSessionRequest(sessionId: string) {
+  return apiJson<{ data: { revoked: boolean } }>(
+    "/api/v1/auth/sessions/" + encodeURIComponent(sessionId),
+    { method: "DELETE" }
+  );
+}
+
+export async function revokeAllSessionsRequest() {
+  return apiJson<{ data: { revoked: number } }>("/api/v1/auth/sessions/revoke-all", {
+    method: "POST"
+  });
 }

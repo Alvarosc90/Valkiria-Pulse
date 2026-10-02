@@ -93,6 +93,7 @@ async function dueRows(limit: number) {
        sa.metadata_json AS account_metadata_json
      FROM calendar_entries ce
      INNER JOIN brands b ON b.id = ce.brand_id
+     INNER JOIN tenant_subscriptions ts ON ts.tenant_id = ce.tenant_id
      INNER JOIN social_accounts sa
        ON sa.tenant_id = ce.tenant_id
       AND sa.brand_id = ce.brand_id
@@ -101,6 +102,14 @@ async function dueRows(limit: number) {
       AND (ce.target_social_account_id IS NULL OR ce.target_social_account_id = sa.id)
      WHERE ce.status IN ('ready','scheduled')
        AND ce.scheduled_at_utc <= UTC_TIMESTAMP()
+       AND (
+         ts.status = 'active'
+         OR (
+           ts.status = 'trial'
+           AND ts.trial_ends_at IS NOT NULL
+           AND ts.trial_ends_at > UTC_TIMESTAMP()
+         )
+       )
        AND NOT EXISTS (
          SELECT 1 FROM publication_jobs pj
          WHERE pj.calendar_entry_id = ce.id AND pj.social_account_id = sa.id

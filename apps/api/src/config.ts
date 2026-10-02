@@ -14,6 +14,16 @@ const optionalString = z.preprocess(
   z.string().min(1).optional()
 );
 
+const booleanFromEnv = (fallback: boolean) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") return fallback;
+    if (typeof value === "boolean") return value;
+    const normalized = String(value).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return value;
+  }, z.boolean());
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4200),
@@ -33,6 +43,22 @@ const schema = z.object({
   AUTH_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   AUTH_REFRESH_COOKIE: z.string().min(1).default("pulse_refresh"),
   CREDENTIALS_ENCRYPTION_KEY: optionalString,
+  PUBLIC_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  PUBLIC_SIGNUP_ENABLED: booleanFromEnv(true),
+  REQUIRE_EMAIL_VERIFICATION: booleanFromEnv(true),
+
+  SMTP_HOST: optionalString,
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: booleanFromEnv(false),
+  SMTP_STARTTLS: booleanFromEnv(true),
+  SMTP_TLS_REJECT_UNAUTHORIZED: booleanFromEnv(true),
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
+  SMTP_FROM: optionalString,
+  SMTP_HELO_NAME: z.string().min(1).default("pulse.valkiria.tech"),
+  SMTP_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(10000),
+  PULSE_CONTACT_EMAIL: z.string().email().default("consultas@valkiria.tech"),
+  PULSE_SUPPORT_EMAIL: z.string().email().default("soporte@valkiria.tech"),
 
   PULSE_LLM_BASE_URL: z.preprocess(
     emptyToUndefined,
@@ -77,9 +103,21 @@ if (parsed.data.NODE_ENV === "production") {
   if (!parsed.data.CREDENTIALS_ENCRYPTION_KEY) {
     throw new Error("CREDENTIALS_ENCRYPTION_KEY is required in production");
   }
+  if (
+    parsed.data.PUBLIC_SIGNUP_ENABLED &&
+    parsed.data.REQUIRE_EMAIL_VERIFICATION &&
+    (!parsed.data.SMTP_HOST || !parsed.data.SMTP_FROM)
+  ) {
+    throw new Error(
+      "SMTP_HOST and SMTP_FROM are required in production when public signup requires email verification"
+    );
+  }
 }
 
-export const config = parsed.data;
+export const config = {
+  ...parsed.data,
+  PUBLIC_BASE_URL: parsed.data.PUBLIC_BASE_URL ?? parsed.data.APP_URL
+};
 
 export function authSecrets() {
   if (!config.AUTH_ACCESS_SECRET || !config.AUTH_REFRESH_SECRET) {

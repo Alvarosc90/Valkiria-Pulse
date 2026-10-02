@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ApiClientError,
   apiFetch,
   apiJson,
   exchangeTrainiaSso,
   loginRequest,
   logoutRequest,
-  refreshAccessToken
+  refreshAccessToken,
+  resendVerificationRequest
 } from "./api";
 import type {
   AuthContext,
@@ -27,6 +29,9 @@ import { PublicLanding } from "./views/PublicLanding";
 import { LegalPage } from "./views/LegalPage";
 import { SignupScreen } from "./views/SignupScreen";
 import { CookieConsent } from "./views/CookieConsent";
+import { PasswordRecoveryPage } from "./views/PasswordRecoveryPage";
+import { SecurityView } from "./views/SecurityView";
+import { VerifyEmailPage } from "./views/VerifyEmailPage";
 import { LEGAL_BY_PATH, LEGAL_PATHS, type LegalType } from "./legal";
 
 type WorkspaceView =
@@ -37,6 +42,7 @@ type WorkspaceView =
   | "agents"
   | "billing"
   | "analytics"
+  | "security"
   | "audit";
 
 const platforms: Array<{
@@ -74,7 +80,8 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "media", label: "Biblioteca" },
   { id: "agents", label: "Agentes" },
   { id: "billing", label: "Plan y uso" },
-  { id: "analytics", label: "Analytics" }
+  { id: "analytics", label: "Analytics" },
+  { id: "security", label: "Seguridad" }
 ];
 
 export default function App() {
@@ -115,6 +122,12 @@ export default function App() {
     setShowLogin(false);
     setPublicPath("/registro");
     window.history.pushState({}, "", "/registro");
+  }
+
+  function openRecovery() {
+    setShowLogin(false);
+    setPublicPath("/recuperar");
+    window.history.pushState({}, "", "/recuperar");
   }
 
   function openLegal(type: LegalType) {
@@ -238,6 +251,7 @@ export default function App() {
       requestedView === "agents" ||
       requestedView === "billing" ||
       requestedView === "analytics" ||
+      requestedView === "security" ||
       requestedView === "audit"
     ) {
       setView(requestedView);
@@ -337,8 +351,7 @@ export default function App() {
     }
   }
 
-  async function logout() {
-    await logoutRequest();
+  function clearLocalSession() {
     setAuth(null);
     setShowLogin(false);
     setPublicPath("/");
@@ -347,6 +360,11 @@ export default function App() {
     setEntries([]);
     setView("overview");
     window.history.replaceState({}, "", "/");
+  }
+
+  async function logout() {
+    await logoutRequest();
+    clearLocalSession();
   }
 
   if (booting) {
@@ -368,12 +386,33 @@ export default function App() {
     return <LegalPage type={legalType} onBack={backToLanding} />;
   }
 
+  if (publicPath === "/verificar-email") {
+    return (
+      <VerifyEmailPage
+        token={new URLSearchParams(window.location.search).get("token")}
+        onLogin={openLogin}
+        onBack={backToLanding}
+      />
+    );
+  }
+
+  if (publicPath === "/recuperar") {
+    return (
+      <PasswordRecoveryPage
+        token={new URLSearchParams(window.location.search).get("token")}
+        onLogin={openLogin}
+        onBack={backToLanding}
+      />
+    );
+  }
+
   if (!auth) {
     if (publicPath === "/registro") {
       return (
         <SignupScreen
           onAuthenticated={authenticated}
           onBack={backToLanding}
+          onLogin={openLogin}
           onLegal={(type) => window.open(LEGAL_PATHS[type], "_blank", "noopener,noreferrer")}
         />
       );
@@ -385,6 +424,7 @@ export default function App() {
           onAuthenticated={authenticated}
           onBack={backToLanding}
           onSignup={openSignup}
+          onRecover={openRecovery}
         />
       );
     }
@@ -707,6 +747,13 @@ export default function App() {
           <AnalyticsView brandId={brandId} onNotice={setNotice} />
         )}
 
+        {view === "security" && (
+          <SecurityView
+            onNotice={setNotice}
+            onSignedOut={clearLocalSession}
+          />
+        )}
+
         {view === "audit" && showAudit && (
           <AuditView onNotice={setNotice} />
         )}
@@ -718,21 +765,26 @@ export default function App() {
 function LoginScreen({
   onAuthenticated,
   onBack,
-  onSignup
+  onSignup,
+  onRecover
 }: {
   onAuthenticated: (auth: AuthContext) => void;
   onBack: () => void;
   onSignup: () => void;
+  onRecover: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenants, setTenants] = useState<TenantOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
 
   async function submit(tenantSlug?: string) {
     setBusy(true);
     setError(null);
+    setVerificationNotice(null);
 
     try {
       const result = await loginRequest({ email, password, tenantSlug });
@@ -745,6 +797,10 @@ function LoginScreen({
       const me = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
       onAuthenticated(me.data);
     } catch (loginError) {
+      const verificationRequired =
+        loginError instanceof ApiClientError &&
+        loginError.code === "AUTH_EMAIL_VERIFICATION_REQUIRED";
+      setNeedsVerification(verificationRequired);
       setError(
         loginError instanceof Error
           ? loginError.message
@@ -830,6 +886,46 @@ function LoginScreen({
         )}
 
         {error && <div className="login-error">{error}</div>}
+
+        {needsVerification && (
+          <button
+            className="login-signup-link"
+            disabled={busy || !email}
+            onClick={() => {
+              setBusy(true);
+              setVerificationNotice(null);
+              void resendVerificationRequest(email)
+                .then((result) => {
+                  setVerificationNotice("Si la cuenta sigue pendiente, enviamos un nuevo enlace.");
+                  if (result?.devVerificationToken) {
+                    window.location.assign(
+                      "/verificar-email?token=" +
+                        encodeURIComponent(result.devVerificationToken)
+                    );
+                  }
+                })
+                .catch((resendError) =>
+                  setError(
+                    resendError instanceof Error
+                      ? resendError.message
+                      : "No se pudo reenviar la verificación"
+                  )
+                )
+                .finally(() => setBusy(false));
+            }}
+          >
+            Reenviar verificación de email
+          </button>
+        )}
+
+        {verificationNotice && (
+          <div className="auth-public-message">{verificationNotice}</div>
+        )}
+
+        <button className="login-recovery-link" onClick={onRecover}>
+          ¿Olvidaste tu contraseña?
+        </button>
+
         <button className="login-signup-link" onClick={onSignup}>
           ¿Todavía no tenés cuenta? Crear prueba de 14 días
         </button>

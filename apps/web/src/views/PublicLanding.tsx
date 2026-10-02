@@ -67,22 +67,31 @@ const plans = [
     name: "Inicial",
     badge: "Prueba 14 días",
     copy: "Para una marca que quiere ordenar calendario, agentes y conexiones.",
-    items: ["1 marca", "Hasta 3 cuentas sociales", "Calendario + Excel", "Brand Brain", "Aprobación manual"],
-    cta: "Empezar prueba"
+    ars: "ARS 24.900",
+    usd: "USD 19",
+    annual: "Anual: ARS 249.000 · USD 190",
+    items: ["1 marca", "Hasta 3 cuentas sociales", "60 publicaciones / mes", "150 generaciones IA / mes", "Brand Brain + Excel"],
+    cta: "Empezar 14 días"
   },
   {
     name: "Profesional",
     badge: "Más volumen",
     copy: "Para equipos que necesitan colaboración, memoria editorial y biblioteca.",
-    items: ["Hasta 3 marcas", "Más cuentas sociales", "Biblioteca de medios", "Auditoría", "Memoria editorial"],
-    cta: "Consultar"
+    ars: "ARS 59.900",
+    usd: "USD 49",
+    annual: "Anual: ARS 599.000 · USD 490",
+    items: ["Hasta 3 marcas", "Hasta 9 cuentas sociales", "250 publicaciones / mes", "800 generaciones IA / mes", "Auditoría + biblioteca + Analytics"],
+    cta: "Crear cuenta"
   },
   {
     name: "Business",
     badge: "Equipos",
     copy: "Para operaciones multi-marca con más capacidad y aprobaciones.",
-    items: ["Hasta 10 marcas", "Aprobaciones de equipo", "Mayor capacidad", "Priority queue", "Analytics preparado"],
-    cta: "Consultar"
+    ars: "ARS 119.900",
+    usd: "USD 99",
+    annual: "Anual: ARS 1.199.000 · USD 990",
+    items: ["Hasta 10 marcas", "Hasta 30 cuentas sociales", "1.200 publicaciones / mes", "5.000 generaciones IA / mes", "Aprobaciones de equipo + prioridad"],
+    cta: "Crear cuenta"
   }
 ];
 
@@ -435,17 +444,25 @@ export function PublicLanding({
                 <span>{plan.badge}</span>
                 <h3>{plan.name}</h3>
                 <p>{plan.copy}</p>
-                <strong>{index === 0 ? "14 días gratis" : "Precio a consultar"}</strong>
+                <div className="landing-plan-price">
+                  <strong>{plan.ars}</strong>
+                  <span>/ mes</span>
+                  <small>{plan.usd} / mes · impuestos no incluidos</small>
+                  <small>{plan.annual} · equivalente a 2 meses bonificados</small>
+                </div>
                 <ul>{plan.items.map((item) => <li key={item}>✓ {item}</li>)}</ul>
                 <button
                   className={index === 0 ? "landing-primary" : "landing-secondary plan-button"}
-                  onClick={index === 0 ? onSignup : () => document.getElementById("contacto")?.scrollIntoView({ behavior: "smooth" })}
+                  onClick={onSignup}
                 >
                   {plan.cta}
                 </button>
               </article>
             ))}
           </div>
+          <p className="landing-enterprise-note">
+            ¿Más de 10 marcas o necesitás límites especiales? Enterprise se cotiza a medida.
+          </p>
         </section>
 
         <section className="landing-section landing-contact-section" id="contacto">

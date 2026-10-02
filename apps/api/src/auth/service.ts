@@ -17,6 +17,8 @@ type UserRow = RowDataPacket & {
   password_hash: string;
   active: number;
   auth_version: number;
+  email_verified_at: Date | null;
+  last_login_at: Date | null;
 };
 
 type TenantLinkRow = RowDataPacket & {
@@ -81,7 +83,8 @@ function refreshToken(input: {
 
 async function userByEmail(email: string) {
   const [rows] = await db.query<UserRow[]>(
-    `SELECT id, email, display_name, password_hash, active, auth_version
+    `SELECT id, email, display_name, password_hash, active, auth_version,
+            email_verified_at, last_login_at
      FROM users
      WHERE email = ? AND active = 1
      LIMIT 1`,
@@ -171,6 +174,14 @@ export async function login(input: {
     throw new HttpError("Credenciales invalidas", 401, "AUTH_INVALID_CREDENTIALS");
   }
 
+  if (config.REQUIRE_EMAIL_VERIFICATION && !user.email_verified_at) {
+    throw new HttpError(
+      "Debes verificar tu email antes de ingresar",
+      403,
+      "AUTH_EMAIL_VERIFICATION_REQUIRED"
+    );
+  }
+
   const links = await linksForUser(user.id, input.tenantSlug);
   if (!links.length) {
     throw new HttpError("La cuenta no tiene acceso activo", 403, "AUTH_NO_TENANT");
@@ -186,6 +197,11 @@ export async function login(input: {
 
   const link = links[0]!;
   const refresh = await createRefreshSession(user, link, input.requestMeta ?? {});
+
+  await db.execute(
+    "UPDATE users SET last_login_at = UTC_TIMESTAMP() WHERE id = ?",
+    [user.id]
+  );
 
   return {
     requiresTenantSelection: false as const,
@@ -227,7 +243,7 @@ export async function refreshAccess(
   const [rows] = await db.query<(UserRow & TenantLinkRow & RowDataPacket)[]>(
     `SELECT
        u.id, u.email, u.display_name, u.password_hash, u.active,
-       u.auth_version,
+       u.auth_version, u.email_verified_at, u.last_login_at,
        ut.user_id, ut.tenant_id, ut.role, ut.active AS tenant_access_active,
        ut.auth_version AS tenant_auth_version,
        t.name AS tenant_name, t.slug AS tenant_slug, t.status AS tenant_status,
