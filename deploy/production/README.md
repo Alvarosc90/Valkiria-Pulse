@@ -16,16 +16,15 @@ git clone https://github.com/Alvarosc90/Valkiria-Pulse.git
 cd Valkiria-Pulse
 git checkout feature/pulse-mvp
 cd deploy/production
-cp .env.example .env
+chmod +x bootstrap-env.sh deploy.sh security-preflight.sh restore-smoke-test.sh
+./bootstrap-env.sh
 nano .env
-docker compose build
-docker compose up -d
-docker compose ps
+./deploy.sh
 curl -I http://127.0.0.1:8081
 curl http://127.0.0.1:8081/health
 ```
 
-Generate independent random values for the database passwords, both auth secrets and the 32-byte base64 credential encryption key. Never reuse TrainIA application secrets unless the provider app is intentionally shared.
+The bootstrap script generates independent database passwords, JWT secrets, the 32-byte base64 credential-encryption key and the TrainIA/PULSE SSO secret. It refuses to overwrite an existing `.env`. Fill only the provider OAuth credentials and optional model-gateway settings afterward. Never reuse database, JWT or provider secrets for SSO.
 
 ## Bootstrap first tenant
 
