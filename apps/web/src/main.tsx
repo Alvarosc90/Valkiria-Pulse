@@ -5,6 +5,8 @@ import "./styles.css";
 import "./workspace.css";
 import "./billing.css";
 import "./analytics.css";
+import "./landing.css";
+import "./connections.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

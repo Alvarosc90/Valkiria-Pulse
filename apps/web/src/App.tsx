@@ -22,6 +22,8 @@ import { CalendarView } from "./views/CalendarView";
 import { MediaLibraryView } from "./views/MediaLibraryView";
 import { BillingView } from "./views/BillingView";
 import { AnalyticsView } from "./views/AnalyticsView";
+import { ConnectionOnboarding } from "./views/ConnectionOnboarding";
+import { PublicLanding } from "./views/PublicLanding";
 
 type WorkspaceView =
   | "overview"
@@ -74,6 +76,9 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [auth, setAuth] = useState<AuthContext | null>(null);
+  const [showLogin, setShowLogin] = useState(
+    () => new URLSearchParams(window.location.search).get("login") === "1"
+  );
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brandId, setBrandId] = useState<number | null>(null);
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -305,7 +310,9 @@ export default function App() {
   }
 
   if (!auth) {
-    return <LoginScreen onAuthenticated={setAuth} />;
+    return showLogin
+      ? <LoginScreen onAuthenticated={setAuth} onBack={() => setShowLogin(false)} />
+      : <PublicLanding onLogin={() => setShowLogin(true)} />;
   }
 
   const showAudit = auth.role === "owner" || auth.role === "admin";
@@ -400,6 +407,13 @@ export default function App() {
         </section>
 
         {view === "overview" && (
+          <ConnectionOnboarding
+            accounts={accounts}
+            onConnect={(platform) => void connectPlatform(platform)}
+          />
+        )}
+
+        {view === "overview" && (
           <>
             <section className="stats-grid">
               <article className="stat-card">
@@ -483,13 +497,6 @@ export default function App() {
                       )}
 
                       <div className="platform-actions">
-                        <button
-                          className="connect-button"
-                          onClick={() => void connectPlatform(platform.id)}
-                        >
-                          {connected ? "Reconectar" : "Conectar cuenta"}
-                        </button>
-
                         <label className="upload-button">
                           Subir Excel
                           <input
@@ -623,9 +630,11 @@ export default function App() {
 }
 
 function LoginScreen({
-  onAuthenticated
+  onAuthenticated,
+  onBack
 }: {
   onAuthenticated: (auth: AuthContext) => void;
+  onBack: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -677,6 +686,7 @@ function LoginScreen({
       </section>
 
       <section className="login-card">
+        <button className="login-back" onClick={onBack}>← Volver</button>
         <span className="eyebrow">Acceso</span>
         <h2>Entrar a PULSE</h2>
 
