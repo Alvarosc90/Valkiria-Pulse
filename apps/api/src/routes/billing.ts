@@ -23,7 +23,7 @@ import { auditEvent } from "../services/auditService.js";
 const router = Router();
 
 
-router.get("/provider/status", requireRole("owner", "admin"), async (_req, res) => {
+router.get("/provider/status", async (_req, res) => {
   res.json({ data: mercadoPagoStatus() });
 });
 
