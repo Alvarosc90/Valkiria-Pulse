@@ -11,8 +11,10 @@ import {
 import { config } from "./config.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
+import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
 import overviewRouter from "./routes/overview.js";
+import socialAccountsRouter from "./routes/socialAccounts.js";
 
 const app = express();
 
@@ -37,7 +39,8 @@ app.get("/health", async (_req, res) => {
       service: "valkiria-pulse-api",
       status: "ok",
       database: "ok",
-      agents: ["instagram", "tiktok", "linkedin"]
+      agents: ["instagram", "tiktok", "linkedin"],
+      runtime: ["api", "worker"]
     });
   } catch {
     res.status(503).json({
@@ -58,8 +61,10 @@ app.post("/api/v1/generate", async (req, res, next) => {
   }
 });
 
+app.use("/api/v1/brands", brandsRouter);
 app.use("/api/v1/calendars", calendarsRouter);
 app.use("/api/v1/overview", overviewRouter);
+app.use("/api/v1/social-accounts", socialAccountsRouter);
 
 app.use(errorHandler);
 
