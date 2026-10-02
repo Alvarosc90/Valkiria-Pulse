@@ -22,9 +22,17 @@ docker compose up -d mysql
 echo "[deploy] Starting API, worker, backup and web"
 docker compose up -d api worker backup web
 
-echo "[deploy] Waiting for API health"
+WEB_BIND="$(docker compose port web 80)"
+WEB_PORT="${WEB_BIND##*:}"
+
+if [[ ! "$WEB_PORT" =~ ^[0-9]+$ ]]; then
+  echo "[deploy] Could not resolve published web port from: $WEB_BIND" >&2
+  exit 1
+fi
+
+echo "[deploy] Waiting for API health through web port $WEB_PORT"
 attempt=0
-until curl -fsS http://127.0.0.1:"${PULSE_HTTP_PORT:-8081}"/health >/dev/null 2>&1; do
+until curl -fsS "http://127.0.0.1:${WEB_PORT}/health" >/dev/null 2>&1; do
   attempt=$((attempt+1))
   if [[ "$attempt" -ge 45 ]]; then
     echo "[deploy] Health check timed out" >&2
@@ -36,4 +44,4 @@ until curl -fsS http://127.0.0.1:"${PULSE_HTTP_PORT:-8081}"/health >/dev/null 2>
 done
 
 docker compose ps
-echo "[deploy] PULSE runtime is healthy on loopback port ${PULSE_HTTP_PORT:-8081}"
+echo "[deploy] PULSE runtime is healthy at http://127.0.0.1:${WEB_PORT}"
