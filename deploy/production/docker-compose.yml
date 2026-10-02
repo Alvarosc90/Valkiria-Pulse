@@ -1,0 +1,96 @@
+name: valkiria-pulse
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PULSE_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-valkiria_pulse}
+      MYSQL_USER: ${DB_USER:-pulse}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pulse_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - pulse_media:/app/data/media
+    command:
+      - sh
+      - -c
+      - npm run db:migrate --workspace @pulse/api && npm run start --workspace @pulse/api
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:4200/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - pulse_media:/app/data/media
+    command: ["npm", "run", "worker", "--workspace", "@pulse/api"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  backup:
+    build:
+      context: ../..
+      dockerfile: deploy/production/Dockerfile.backup
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - pulse_media:/media:ro
+      - ${PULSE_BACKUP_DIR:-/opt/valkiria-pulse/backups}:/backups
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PULSE_HTTP_PORT:-8081}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pulse_mysql:
+  pulse_media:
