@@ -60,6 +60,11 @@ const schema = z.object({
   PULSE_CONTACT_EMAIL: z.string().email().default("consultas@valkiria.tech"),
   PULSE_SUPPORT_EMAIL: z.string().email().default("soporte@valkiria.tech"),
 
+  MERCADOPAGO_ACCESS_TOKEN: optionalString,
+  MERCADOPAGO_WEBHOOK_SECRET: optionalString,
+  MERCADOPAGO_MODE: z.enum(["test", "production", "unknown"]).default("unknown"),
+  MERCADOPAGO_API_BASE: z.string().url().default("https://api.mercadopago.com"),
+
   PULSE_LLM_BASE_URL: z.preprocess(
     emptyToUndefined,
     z.string().url().optional()
@@ -110,6 +115,14 @@ if (parsed.data.NODE_ENV === "production") {
   ) {
     throw new Error(
       "SMTP_HOST and SMTP_FROM are required in production when public signup requires email verification"
+    );
+  }
+  if (
+    parsed.data.MERCADOPAGO_ACCESS_TOKEN &&
+    !parsed.data.MERCADOPAGO_WEBHOOK_SECRET
+  ) {
+    throw new Error(
+      "MERCADOPAGO_WEBHOOK_SECRET is required in production when Mercado Pago is configured"
     );
   }
 }

@@ -119,3 +119,122 @@
   .billing-filters { width: 100%; }
   .billing-filters select { flex: 1; }
 }
+
+
+.billing-provider-state {
+  margin: 14px 0;
+  border: 1px solid #1d2b40;
+  border-radius: 14px;
+  background: #09111e;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.billing-provider-state > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.billing-provider-state .status-dot {
+  grid-row: 1 / span 2;
+}
+
+.status-dot.offline {
+  background: #6f7887;
+  box-shadow: none;
+}
+
+.billing-provider-state strong {
+  font-size: 10px;
+}
+
+.billing-provider-state small {
+  color: #6f8198;
+  font-size: 8px;
+}
+
+.billing-safe,
+.billing-warning {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.billing-safe {
+  border: 1px solid #28533a;
+  background: #0d2015;
+  color: #83dda4;
+}
+
+.billing-warning {
+  border: 1px solid #59461f;
+  background: #211b0d;
+  color: #d9bc74;
+}
+
+.billing-current-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.billing-trial-note {
+  color: #71849b;
+  font-size: 9px;
+}
+
+.billing-discount {
+  display: block;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  color: #70cba0;
+  font-size: 8px;
+}
+
+.plan-active-label {
+  margin-top: auto;
+  border: 1px solid #28533a;
+  border-radius: 10px;
+  background: #0d2015;
+  color: #83dda4;
+  padding: 9px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.billing-setup-note {
+  margin-top: 16px;
+  border: 1px solid #59461f;
+  border-radius: 14px;
+  background: #17150d;
+  padding: 13px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.billing-setup-note strong {
+  color: #dfc17c;
+  font-size: 10px;
+}
+
+.billing-setup-note span {
+  color: #857a5f;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+@media (max-width: 680px) {
+  .billing-provider-state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

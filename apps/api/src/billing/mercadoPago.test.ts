@@ -1,0 +1,59 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+
+process.env.NODE_ENV = "test";
+process.env.DB_HOST = "127.0.0.1";
+process.env.DB_USER = "pulse";
+process.env.DB_NAME = "pulse_test";
+process.env.AUTH_ACCESS_SECRET = "test-access-secret-test-access-secret";
+process.env.AUTH_REFRESH_SECRET = "test-refresh-secret-test-refresh-secret";
+process.env.CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+process.env.MERCADOPAGO_WEBHOOK_SECRET = "pulse-test-webhook-secret";
+
+const {
+  mapMercadoPagoSubscriptionStatus,
+  validateMercadoPagoSignature
+} = await import("./mercadoPago.js");
+
+test("validates Mercado Pago webhook signature manifest", () => {
+  const dataId = "PREAPPROVAL-ABC";
+  const requestId = "request-42";
+  const ts = "1790030000";
+  const manifest =
+    "id:" + dataId.toLowerCase() +
+    ";request-id:" + requestId +
+    ";ts:" + ts +
+    ";";
+
+  const v1 = createHmac("sha256", "pulse-test-webhook-secret")
+    .update(manifest)
+    .digest("hex");
+
+  assert.equal(
+    validateMercadoPagoSignature({
+      dataId,
+      xRequestId: requestId,
+      xSignature: "ts=" + ts + ",v1=" + v1
+    }),
+    true
+  );
+});
+
+test("rejects tampered Mercado Pago signature", () => {
+  assert.throws(() =>
+    validateMercadoPagoSignature({
+      dataId: "abc",
+      xRequestId: "request",
+      xSignature: "ts=10,v1=deadbeef"
+    })
+  );
+});
+
+test("maps subscription statuses without activating pending checkout", () => {
+  assert.equal(mapMercadoPagoSubscriptionStatus("authorized"), "active");
+  assert.equal(mapMercadoPagoSubscriptionStatus("pending"), "pending");
+  assert.equal(mapMercadoPagoSubscriptionStatus("paused"), "paused");
+  assert.equal(mapMercadoPagoSubscriptionStatus("cancelled"), "cancelled");
+  assert.equal(mapMercadoPagoSubscriptionStatus("other"), "unknown");
+});
