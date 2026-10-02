@@ -21,6 +21,7 @@ import analyticsRouter from "./routes/analytics.js";
 import approvalsRouter from "./routes/approvals.js";
 import auditRouter from "./routes/audit.js";
 import billingRouter from "./routes/billing.js";
+import billingWebhookRouter from "./routes/billingWebhook.js";
 import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
 import mediaRouter from "./routes/media.js";
@@ -92,6 +93,7 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/api/v1/public", publicRouter);
+app.use("/api/v1/webhooks", billingWebhookRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/connections", connectionsRouter);
 app.use("/api/v1/integrations", integrationsRouter);
