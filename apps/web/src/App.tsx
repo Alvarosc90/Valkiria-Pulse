@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  apiFetch,
+  apiJson,
+  loginRequest,
+  logoutRequest,
+  refreshAccessToken
+} from "./api";
 
 type Platform = "instagram" | "tiktok" | "linkedin";
 
@@ -12,9 +19,35 @@ type CalendarEntry = {
   status: string;
 };
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4200";
-const tenantId = Number(import.meta.env.VITE_DEMO_TENANT_ID ?? 1);
-const brandId = Number(import.meta.env.VITE_DEMO_BRAND_ID ?? 1);
+type AuthContext = {
+  userId: string;
+  tenantId: string;
+  role: "owner" | "admin" | "editor" | "viewer";
+  user: { email: string; displayName: string };
+  tenant: { name: string; slug: string };
+};
+
+type Brand = {
+  id: number;
+  name: string;
+  description?: string;
+};
+
+type SocialAccount = {
+  id: number;
+  brandId: number;
+  platform: Platform;
+  username?: string;
+  displayName?: string;
+  status: string;
+};
+
+type TenantOption = {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+};
 
 const platforms: Array<{
   id: Platform;
@@ -43,7 +76,13 @@ const platforms: Array<{
 ];
 
 export default function App() {
+  const [booting, setBooting] = useState(true);
+  const [auth, setAuth] = useState<AuthContext | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brandId, setBrandId] = useState<number | null>(null);
+  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<Record<Platform, string>>({
     instagram: "Listo para importar",
     tiktok: "Listo para importar",
@@ -51,44 +90,114 @@ export default function App() {
   });
 
   const upcoming = useMemo(
-    () => [...entries].sort((a, b) => a.scheduledAtUtc.localeCompare(b.scheduledAtUtc)).slice(0, 8),
+    () => [...entries]
+      .sort((a, b) => a.scheduledAtUtc.localeCompare(b.scheduledAtUtc))
+      .slice(0, 8),
     [entries]
   );
 
-  async function refreshCalendar() {
+  const activeBrand = brands.find((brand) => brand.id === brandId) ?? brands[0];
+
+  async function loadAuth() {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      setBooting(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${apiUrl}/api/v1/calendars?tenantId=${tenantId}&limit=100`);
-      if (!response.ok) return;
-      const payload = await response.json();
-      setEntries(payload.data ?? []);
-    } catch {
-      // API may not be running during static UI work.
+      const payload = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
+      setAuth(payload.data);
+    } finally {
+      setBooting(false);
     }
   }
 
+  async function loadWorkspace() {
+    const [brandPayload, calendarPayload] = await Promise.all([
+      apiJson<{ data: Brand[] }>("/api/v1/brands"),
+      apiJson<{ data: CalendarEntry[] }>("/api/v1/calendars?limit=100")
+    ]);
+
+    setBrands(brandPayload.data ?? []);
+    setEntries(calendarPayload.data ?? []);
+
+    const nextBrandId = brandId ?? brandPayload.data?.[0]?.id ?? null;
+    setBrandId(nextBrandId);
+
+    if (nextBrandId) {
+      const accountPayload = await apiJson<{ data: SocialAccount[] }>(
+        `/api/v1/social-accounts?brandId=${nextBrandId}`
+      );
+      setAccounts(accountPayload.data ?? []);
+    } else {
+      setAccounts([]);
+    }
+  }
+
+  async function refreshCalendar() {
+    const payload = await apiJson<{ data: CalendarEntry[] }>(
+      "/api/v1/calendars?limit=100"
+    );
+    setEntries(payload.data ?? []);
+  }
+
+  async function refreshAccounts(nextBrandId = brandId) {
+    if (!nextBrandId) return;
+    const payload = await apiJson<{ data: SocialAccount[] }>(
+      `/api/v1/social-accounts?brandId=${nextBrandId}`
+    );
+    setAccounts(payload.data ?? []);
+  }
+
   useEffect(() => {
-    void refreshCalendar();
+    void loadAuth();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connection") === "success") {
+      setNotice(`${params.get("social") ?? "Red social"} conectada correctamente.`);
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("connection") === "error") {
+      setNotice(`No se pudo completar la conexion: ${params.get("reason") ?? "error"}`);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
 
+  useEffect(() => {
+    if (!auth) return;
+    void loadWorkspace().catch((error) => {
+      setNotice(error instanceof Error ? error.message : "No se pudo cargar PULSE");
+    });
+  }, [auth]);
+
+  useEffect(() => {
+    if (!auth || !brandId) return;
+    void refreshAccounts(brandId).catch(() => undefined);
+  }, [brandId]);
+
   async function uploadCalendar(platform: Platform, file: File) {
+    if (!brandId) {
+      setUploadState((current) => ({ ...current, [platform]: "Primero selecciona una marca" }));
+      return;
+    }
+
     setUploadState((current) => ({ ...current, [platform]: "Importando..." }));
 
     const form = new FormData();
     form.set("file", file);
-    form.set("tenantId", String(tenantId));
     form.set("brandId", String(brandId));
     form.set("platform", platform);
     form.set("timezone", "America/Argentina/Cordoba");
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/calendars/import`, {
+      const response = await apiFetch("/api/v1/calendars/import", {
         method: "POST",
         body: form
       });
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload?.error ?? "No se pudo importar");
+        throw new Error(payload?.message ?? payload?.error ?? "No se pudo importar");
       }
 
       const data = payload.data;
@@ -103,6 +212,51 @@ export default function App() {
         [platform]: error instanceof Error ? error.message : "Error de importacion"
       }));
     }
+  }
+
+  async function connectPlatform(platform: Platform) {
+    if (!brandId) return;
+
+    try {
+      setNotice(`Abriendo autorizacion de ${platform}...`);
+      const payload = await apiJson<{ data: { authorizationUrl: string } }>(
+        `/api/v1/connections/${platform}/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brandId,
+            returnTo: "/?view=connections"
+          })
+        }
+      );
+
+      window.location.assign(payload.data.authorizationUrl);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "No se pudo iniciar la conexion");
+    }
+  }
+
+  async function logout() {
+    await logoutRequest();
+    setAuth(null);
+    setBrands([]);
+    setAccounts([]);
+    setEntries([]);
+  }
+
+  if (booting) {
+    return (
+      <div className="splash-screen">
+        <div className="brand-mark large">V</div>
+        <strong>Valkiria PULSE</strong>
+        <span>Preparando tu command center...</span>
+      </div>
+    );
+  }
+
+  if (!auth) {
+    return <LoginScreen onAuthenticated={setAuth} />;
   }
 
   return (
@@ -125,12 +279,17 @@ export default function App() {
           <button className="nav-item muted">Analytics · pronto</button>
         </nav>
 
-        <div className="tenant-chip">
-          <span className="status-dot" />
-          <div>
-            <small>Marca activa</small>
-            <strong>TrainIA</strong>
+        <div className="sidebar-footer">
+          <div className="tenant-chip">
+            <span className="status-dot" />
+            <div>
+              <small>{auth.tenant.name}</small>
+              <strong>{activeBrand?.name ?? "Sin marca"}</strong>
+            </div>
           </div>
+          <button className="logout-button" onClick={() => void logout()}>
+            Cerrar sesion
+          </button>
         </div>
       </aside>
 
@@ -147,6 +306,31 @@ export default function App() {
           <button className="primary-button">Nueva publicación</button>
         </header>
 
+        {notice && (
+          <div className="notice">
+            <span>{notice}</span>
+            <button onClick={() => setNotice(null)}>×</button>
+          </div>
+        )}
+
+        <section className="workspace-strip">
+          <label>
+            <span>Marca activa</span>
+            <select
+              value={brandId ?? ""}
+              onChange={(event) => setBrandId(Number(event.target.value))}
+            >
+              {brands.map((brand) => (
+                <option value={brand.id} key={brand.id}>{brand.name}</option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span>Sesion</span>
+            <strong>{auth.user.displayName} · {auth.role}</strong>
+          </div>
+        </section>
+
         <section className="stats-grid">
           <article className="stat-card">
             <span>Programadas</span>
@@ -159,9 +343,9 @@ export default function App() {
             <small>contexto aislado por red</small>
           </article>
           <article className="stat-card">
-            <span>Redes conectables</span>
-            <strong>3</strong>
-            <small>Instagram · TikTok · LinkedIn</small>
+            <span>Redes conectadas</span>
+            <strong>{accounts.filter((account) => account.status === "connected").length}</strong>
+            <small>de 3 disponibles</small>
           </article>
           <article className="stat-card">
             <span>Analytics</span>
@@ -180,39 +364,62 @@ export default function App() {
           </div>
 
           <div className="platform-grid">
-            {platforms.map((platform) => (
-              <article className="platform-card" key={platform.id}>
-                <div className="platform-header">
-                  <div>
-                    <span className={`platform-icon ${platform.id}`}>
-                      {platform.label.slice(0, 2)}
-                    </span>
+            {platforms.map((platform) => {
+              const account = accounts.find((item) => item.platform === platform.id);
+              const connected = account?.status === "connected";
+
+              return (
+                <article className="platform-card" key={platform.id}>
+                  <div className="platform-header">
                     <div>
-                      <strong>{platform.label}</strong>
-                      <small>{platform.agent}</small>
+                      <span className={`platform-icon ${platform.id}`}>
+                        {platform.label.slice(0, 2)}
+                      </span>
+                      <div>
+                        <strong>{platform.label}</strong>
+                        <small>{platform.agent}</small>
+                      </div>
                     </div>
+                    <span className={connected ? "connection-state connected" : "connection-state"}>
+                      {connected ? "Conectada" : "Sin conectar"}
+                    </span>
                   </div>
-                  <span className="agent-state">Activo</span>
-                </div>
 
-                <p>{platform.description}</p>
+                  <p>{platform.description}</p>
 
-                <label className="upload-button">
-                  Subir calendario Excel
-                  <input
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void uploadCalendar(platform.id, file);
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
+                  {connected && (
+                    <div className="account-line">
+                      <span>{account.displayName ?? account.username ?? "Cuenta conectada"}</span>
+                      <small>API lista</small>
+                    </div>
+                  )}
 
-                <small className="upload-state">{uploadState[platform.id]}</small>
-              </article>
-            ))}
+                  <div className="platform-actions">
+                    <button
+                      className="connect-button"
+                      onClick={() => void connectPlatform(platform.id)}
+                    >
+                      {connected ? "Reconectar" : "Conectar cuenta"}
+                    </button>
+
+                    <label className="upload-button">
+                      Subir Excel
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadCalendar(platform.id, file);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <small className="upload-state">{uploadState[platform.id]}</small>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -267,6 +474,120 @@ export default function App() {
           </aside>
         </section>
       </main>
+    </div>
+  );
+}
+
+function LoginScreen({
+  onAuthenticated
+}: {
+  onAuthenticated: (auth: AuthContext) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(tenantSlug?: string) {
+    setBusy(true);
+    setError(null);
+
+    try {
+      const result = await loginRequest({ email, password, tenantSlug });
+
+      if (result.requiresTenantSelection) {
+        setTenants(result.tenants ?? []);
+        return;
+      }
+
+      const me = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
+      onAuthenticated(me.data);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "No se pudo iniciar sesion");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="login-shell">
+      <section className="login-brand">
+        <span className="eyebrow">Valkiria Project</span>
+        <div className="login-logo">
+          <div className="brand-mark large">V</div>
+          <div>
+            <strong>Valkiria</strong>
+            <span>PULSE</span>
+          </div>
+        </div>
+        <h1>Contenido distinto. Contexto correcto. Una sola operación.</h1>
+        <p>
+          PULSE coordina agentes especializados para Instagram, TikTok y LinkedIn
+          sin mezclar la lógica editorial de cada red.
+        </p>
+      </section>
+
+      <section className="login-card">
+        <span className="eyebrow">Acceso</span>
+        <h2>Entrar a PULSE</h2>
+
+        {tenants.length === 0 ? (
+          <>
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="tu@email.com"
+              />
+            </label>
+
+            <label className="field">
+              <span>Contraseña</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void submit();
+                }}
+              />
+            </label>
+
+            <button
+              className="primary-button login-submit"
+              disabled={busy || !email || password.length < 8}
+              onClick={() => void submit()}
+            >
+              {busy ? "Ingresando..." : "Ingresar"}
+            </button>
+          </>
+        ) : (
+          <div className="tenant-picker">
+            <p>Elegí la empresa con la que querés trabajar.</p>
+            {tenants.map((tenant) => (
+              <button
+                key={tenant.id}
+                disabled={busy}
+                onClick={() => void submit(tenant.slug)}
+              >
+                <strong>{tenant.name}</strong>
+                <span>{tenant.role}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {error && <div className="login-error">{error}</div>}
+        <small className="login-footnote">
+          Los tokens sociales se mantienen cifrados y nunca se exponen a los agentes.
+        </small>
+      </section>
     </div>
   );
 }
