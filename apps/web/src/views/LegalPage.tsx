@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { PULSE_LEGAL_VERSION, LEGAL_DOCS, type LegalType } from "../legal";
 
 const LOGO = "/assets/branding/4_VALKIRIA%20PULSE.png";
@@ -10,6 +11,19 @@ export function LegalPage({
   onBack: () => void;
 }) {
   const doc = LEGAL_DOCS[type];
+
+  useEffect(() => {
+    const previous = document.title;
+    document.title = doc.title + " | Valkiria PULSE";
+    const meta = document.querySelector('meta[name="description"]');
+    const previousDescription = meta?.getAttribute("content") ?? "";
+    meta?.setAttribute("content", doc.intro);
+
+    return () => {
+      document.title = previous;
+      meta?.setAttribute("content", previousDescription);
+    };
+  }, [doc]);
 
   return (
     <main className="legal-shell">
