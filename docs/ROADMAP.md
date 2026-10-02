@@ -30,10 +30,10 @@
 - [x] Production Docker deployment stack
 - [ ] Deploy production at pulse.valkiria.tech
 - [ ] Plans and billing
-- [ ] TrainIA SSO/module button
+- [x] TrainIA SSO/module button
 - [x] Team approvals
 - [x] Audit log
-- [ ] Production backup/restore runbook
+- [x] Production backup/restore runbook
 
 ## Phase 5 - Analytics
 - [ ] Instagram insights permissions
