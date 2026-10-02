@@ -42,4 +42,4 @@
 - [ ] LinkedIn organization analytics permissions
 - [x] Unified reporting foundation
 - [x] Editorial performance signal foundation
-- [ ] Inject approved analytics signals into future agent generations
+- [x] Inject analytics signals into future agent generations
