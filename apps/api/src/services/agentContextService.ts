@@ -77,3 +77,48 @@ export async function recentPlatformPosts(
     })
     .filter(Boolean);
 }
+
+
+export async function platformPerformanceSignals(
+  tenantId: number,
+  brandId: number,
+  platform: SocialPlatform,
+  limit = 10
+) {
+  const safeLimit = Math.min(Math.max(limit, 1), 30);
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT signal_key, signal_value, sample_size, metadata_json, calculated_at
+     FROM editorial_performance_signals
+     WHERE tenant_id = ?
+       AND brand_id = ?
+       AND platform = ?
+     ORDER BY calculated_at DESC, id DESC
+     LIMIT ?`,
+    [tenantId, brandId, platform, safeLimit * 3]
+  );
+
+  const seen = new Set<string>();
+  const signals: Array<{
+    key: string;
+    value: number;
+    sampleSize: number;
+    metadata?: Record<string, unknown>;
+  }> = [];
+
+  for (const row of rows) {
+    const key = String(row.signal_key);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    signals.push({
+      key,
+      value: Number(row.signal_value ?? 0),
+      sampleSize: Number(row.sample_size ?? 0),
+      metadata: json<Record<string, unknown>>(row.metadata_json, {})
+    });
+
+    if (signals.length >= safeLimit) break;
+  }
+
+  return signals;
+}
