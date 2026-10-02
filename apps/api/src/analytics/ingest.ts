@@ -117,17 +117,10 @@ export async function ingestPostMetricSamples(input: {
 
     await connection.execute(
       `UPDATE analytics_sync_runs
-       SET records_received = ?, updated_at = COALESCE(updated_at, UTC_TIMESTAMP())
+       SET records_received = ?
        WHERE id = ? AND tenant_id = ?`,
       [input.samples.length, input.runId, input.tenantId]
-    ).catch(async () => {
-      await connection.execute(
-        `UPDATE analytics_sync_runs
-         SET records_received = ?
-         WHERE id = ? AND tenant_id = ?`,
-        [input.samples.length, input.runId, input.tenantId]
-      );
-    });
+    );
 
     await connection.commit();
     return { records: input.samples.length };
