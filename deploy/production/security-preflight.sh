@@ -73,7 +73,8 @@ fi
 app_url="$(value_of APP_URL)"
 api_url="$(value_of API_URL)"
 oauth_url="$(value_of OAUTH_PUBLIC_BASE_URL)"
-for value in "$app_url" "$api_url" "$oauth_url"; do
+public_base_url="$(value_of PUBLIC_BASE_URL)"
+for value in "$app_url" "$api_url" "$oauth_url" "$public_base_url"; do
   if [[ "$value" != https://* ]]; then
     fail "production public URLs must use HTTPS"
   fi
@@ -85,6 +86,40 @@ if [[ "$cors" != *"https://pulse.valkiria.tech"* ]]; then
 fi
 if [[ "$cors" == *"trycloudflare.com"* ]]; then
   fail "temporary trycloudflare origins are forbidden in production CORS"
+fi
+
+signup_enabled="$(value_of PUBLIC_SIGNUP_ENABLED)"
+email_verification="$(value_of REQUIRE_EMAIL_VERIFICATION)"
+if [[ "$signup_enabled" != "true" ]]; then
+  warn "PUBLIC_SIGNUP_ENABLED is not true; public acquisition will be disabled"
+fi
+if [[ "$email_verification" != "true" ]]; then
+  fail "REQUIRE_EMAIL_VERIFICATION must be true for production public signup"
+fi
+
+smtp_host="$(value_of SMTP_HOST)"
+smtp_from="$(value_of SMTP_FROM)"
+smtp_user="$(value_of SMTP_USER)"
+smtp_password="$(value_of SMTP_PASSWORD)"
+if [[ -z "$smtp_host" || -z "$smtp_from" ]]; then
+  fail "SMTP_HOST and SMTP_FROM are required for production email verification"
+fi
+if [[ -n "$smtp_user" && -z "$smtp_password" ]]; then
+  fail "SMTP_PASSWORD is required when SMTP_USER is configured"
+fi
+
+mp_token="$(value_of MERCADOPAGO_ACCESS_TOKEN)"
+mp_webhook="$(value_of MERCADOPAGO_WEBHOOK_SECRET)"
+mp_mode="$(value_of MERCADOPAGO_MODE)"
+if [[ -n "$mp_token" ]]; then
+  if [[ -z "$mp_webhook" ]]; then
+    fail "MERCADOPAGO_WEBHOOK_SECRET is required when Mercado Pago is enabled"
+  fi
+  if [[ "$mp_mode" != "production" ]]; then
+    fail "MERCADOPAGO_MODE must be production before accepting real payments"
+  fi
+else
+  warn "Mercado Pago is not configured; checkout will remain safely disabled"
 fi
 
 if command -v docker >/dev/null 2>&1; then
