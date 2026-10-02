@@ -27,7 +27,25 @@ button { color: inherit; }
   justify-content: space-between;
 }
 
-.sidebar > div:first-child { display: flex; align-items: center; gap: 12px; }
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+}
+.pulse-logo {
+  display: block;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  filter: none;
+}
+.pulse-logo-sidebar {
+  width: 100%;
+  max-width: 198px;
+  height: auto;
+}
 .brand-mark {
   width: 40px;
   height: 40px;
@@ -169,6 +187,8 @@ h1 { max-width: 900px; margin: 10px 0 14px; font-size: clamp(34px, 4vw, 62px); l
   .app-shell { display: block; }
   .sidebar { position: relative; width: 100%; height: auto; padding: 16px 18px; border-right: 0; border-bottom: 1px solid #1b2233; }
   .sidebar nav { display: none; }
+  .sidebar-brand { min-height: 44px; }
+  .pulse-logo-sidebar { width: min(220px, 72vw); }
   .tenant-chip { display: none; }
   .content { padding: 26px 18px 60px; }
   .topbar { display: block; }
