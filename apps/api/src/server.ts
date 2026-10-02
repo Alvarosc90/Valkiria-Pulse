@@ -26,7 +26,6 @@ import mediaRouter from "./routes/media.js";
 import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
 import publicRouter from "./routes/public.js";
-import leadsRouter from "./routes/leads.js";
 import {
   loadBrandContext,
   platformPerformanceSignals,
@@ -155,7 +154,6 @@ app.use("/api/v1/brands", requireAuth, requireTenantMatch, brandsRouter);
 app.use("/api/v1/calendars", requireAuth, requireTenantMatch, calendarsRouter);
 app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
 app.use("/api/v1/social-accounts", requireAuth, requireTenantMatch, socialAccountsRouter);
-app.use("/api/v1/leads", requireAuth, requireTenantMatch, leadsRouter);
 
 app.use(errorHandler);
 
