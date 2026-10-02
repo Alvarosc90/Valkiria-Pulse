@@ -1,19 +1,37 @@
 import { Router } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
+import { requireRole } from "../auth/middleware.js";
 import { db } from "../db.js";
 
 const router = Router();
 
+router.get("/", async (req, res, next) => {
+  try {
+    const [rows] = await db.query<RowDataPacket[]>(
+      `SELECT id, name, description,
+              tone_json AS tone, products_json AS products,
+              approved_claims_json AS approvedClaims,
+              forbidden_terms_json AS forbiddenTerms,
+              ctas_json AS ctas
+       FROM brands
+       WHERE tenant_id = ? AND active = 1
+       ORDER BY name ASC`,
+      [Number(req.auth!.tenantId)]
+    );
+
+    res.json({ data: rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/:brandId", async (req, res, next) => {
   try {
-    const input = z.object({
-      tenantId: z.coerce.number().int().positive(),
-      brandId: z.coerce.number().int().positive()
-    }).parse({ ...req.query, ...req.params });
+    const brandId = z.coerce.number().int().positive().parse(req.params.brandId);
 
     const [rows] = await db.query<RowDataPacket[]>(
-      `SELECT id, tenant_id AS tenantId, name, description,
+      `SELECT id, name, description,
               tone_json AS tone, products_json AS products,
               approved_claims_json AS approvedClaims,
               forbidden_terms_json AS forbiddenTerms,
@@ -21,11 +39,11 @@ router.get("/:brandId", async (req, res, next) => {
        FROM brands
        WHERE id = ? AND tenant_id = ? AND active = 1
        LIMIT 1`,
-      [input.brandId, input.tenantId]
+      [brandId, Number(req.auth!.tenantId)]
     );
 
     if (!rows[0]) {
-      res.status(404).json({ error: "brand_not_found" });
+      res.status(404).json({ error: "BRAND_NOT_FOUND" });
       return;
     }
 
@@ -35,12 +53,10 @@ router.get("/:brandId", async (req, res, next) => {
   }
 });
 
-router.patch("/:brandId", async (req, res, next) => {
+router.patch("/:brandId", requireRole("owner", "admin"), async (req, res, next) => {
   try {
-    const identity = z.object({
-      tenantId: z.coerce.number().int().positive(),
-      brandId: z.coerce.number().int().positive()
-    }).parse({ ...req.query, ...req.params });
+    const brandId = z.coerce.number().int().positive().parse(req.params.brandId);
+    const tenantId = Number(req.auth!.tenantId);
 
     const body = z.object({
       name: z.string().min(1).max(140).optional(),
@@ -69,18 +85,18 @@ router.patch("/:brandId", async (req, res, next) => {
     if (body.ctas !== undefined) add("ctas_json", JSON.stringify(body.ctas));
 
     if (!fields.length) {
-      res.status(400).json({ error: "no_changes" });
+      res.status(400).json({ error: "NO_CHANGES" });
       return;
     }
 
-    values.push(identity.brandId, identity.tenantId);
+    values.push(brandId, tenantId);
     const [result] = await db.execute<ResultSetHeader>(
       `UPDATE brands SET ${fields.join(", ")} WHERE id = ? AND tenant_id = ? AND active = 1`,
       values
     );
 
     if (!result.affectedRows) {
-      res.status(404).json({ error: "brand_not_found" });
+      res.status(404).json({ error: "BRAND_NOT_FOUND" });
       return;
     }
 
