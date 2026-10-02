@@ -1,5 +1,5 @@
 import type { PublishRequest, PublishResult } from "@pulse/contracts";
-import { TokenAwareProvider } from "./index.js";
+import { TokenAwareProvider } from "./base.js";
 
 export class TikTokProvider extends TokenAwareProvider {
   readonly platform = "tiktok" as const;
