@@ -462,3 +462,78 @@
   .pulse-logo-login { width: 100%; }
   .login-card { width: calc(100% - 32px); padding: 22px; }
 }
+
+
+.login-recovery-link {
+  width: 100%;
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: #93a7bd;
+  font-size: 9px;
+  cursor: pointer;
+}
+.login-recovery-link:hover,
+.login-signup-link:hover {
+  color: #79d2f7;
+}
+
+.security-view {
+  margin-top: 34px;
+}
+.security-grid {
+  display: grid;
+  grid-template-columns: minmax(320px,.78fr) minmax(0,1.22fr);
+  gap: 14px;
+}
+.security-copy {
+  margin: -4px 0 12px;
+  color: #71839a;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.security-hint {
+  display: block;
+  margin-top: 8px;
+  color: #5f7289;
+  font-size: 8px;
+}
+.security-session-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+.security-session-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.security-session {
+  border: 1px solid #1d2a3e;
+  border-radius: 11px;
+  background: #080f1a;
+  padding: 10px 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+.security-session > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.security-session strong {
+  font-size: 10px;
+}
+.security-session span,
+.security-session small {
+  color: #6e8097;
+  font-size: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 900px) {
+  .security-grid { grid-template-columns: 1fr; }
+}
