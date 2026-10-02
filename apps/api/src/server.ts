@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -8,9 +9,12 @@ import {
   SocialOrchestrator,
   TikTokAgent
 } from "@pulse/agents";
+import authRouter from "./auth/routes.js";
+import { requireAuth, requireTenantMatch } from "./auth/middleware.js";
 import { config } from "./config.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
+import { HttpError } from "./http/httpError.js";
 import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
 import overviewRouter from "./routes/overview.js";
@@ -24,6 +28,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(pinoHttp());
+app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 
 const orchestrator = new SocialOrchestrator([
@@ -51,20 +56,38 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.post("/api/v1/generate", async (req, res, next) => {
+app.use("/api/v1/auth", authRouter);
+
+app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, next) => {
   try {
     const { entry, brand } = req.body;
-    const generated = await orchestrator.generate(entry, brand);
+    const tenantId = req.auth!.tenantId;
+
+    if (
+      (entry?.tenantId && String(entry.tenantId) !== tenantId) ||
+      (brand?.tenantId && String(brand.tenantId) !== tenantId)
+    ) {
+      throw new HttpError(
+        "Acceso cruzado entre empresas bloqueado",
+        403,
+        "TENANT_BOUNDARY_VIOLATION"
+      );
+    }
+
+    const generated = await orchestrator.generate(
+      { ...entry, tenantId },
+      { ...brand, tenantId }
+    );
     res.json({ data: generated });
   } catch (error) {
     next(error);
   }
 });
 
-app.use("/api/v1/brands", brandsRouter);
-app.use("/api/v1/calendars", calendarsRouter);
-app.use("/api/v1/overview", overviewRouter);
-app.use("/api/v1/social-accounts", socialAccountsRouter);
+app.use("/api/v1/brands", requireAuth, requireTenantMatch, brandsRouter);
+app.use("/api/v1/calendars", requireAuth, requireTenantMatch, calendarsRouter);
+app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
+app.use("/api/v1/social-accounts", requireAuth, requireTenantMatch, socialAccountsRouter);
 
 app.use(errorHandler);
 
