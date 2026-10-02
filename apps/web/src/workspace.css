@@ -54,6 +54,16 @@
   box-shadow: 0 24px 80px rgba(0,0,0,.32);
 }
 .login-card h2 { margin: 8px 0 24px; font-size: 27px; letter-spacing: -.03em; }
+.login-back {
+  border: 0;
+  background: transparent;
+  color: #74839a;
+  padding: 0;
+  margin-bottom: 18px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.login-back:hover { color: #fff; }
 .field { display: grid; gap: 8px; margin-top: 15px; }
 .field span { color: #8f9bb0; font-size: 11px; font-weight: 700; }
 .field input,
