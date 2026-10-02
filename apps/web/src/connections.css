@@ -1,0 +1,106 @@
+.connection-onboarding {
+  margin-top: 26px;
+  border: 1px solid #25405d;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(15, 114, 166, .14), transparent 34%),
+    #0a111e;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  gap: 22px;
+}
+.connection-onboarding-copy h2 {
+  margin: 8px 0 10px;
+  max-width: 620px;
+  font-size: 22px;
+  letter-spacing: -.025em;
+}
+.connection-onboarding-copy p {
+  margin: 0;
+  max-width: 680px;
+  color: #8290a5;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.connection-progress {
+  display: grid;
+  gap: 7px;
+}
+.connection-step {
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #1b293e;
+  background: #080f1a;
+  border-radius: 11px;
+  padding: 8px 10px;
+  opacity: .62;
+}
+.connection-step.current {
+  opacity: 1;
+  border-color: #315a82;
+  background: #0b1727;
+}
+.connection-step.done {
+  opacity: 1;
+  border-color: #244d37;
+  background: #0b1711;
+}
+.connection-step-index {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #111c2d;
+  color: #7d8da5;
+  font-size: 9px;
+  font-weight: 800;
+}
+.connection-step.done .connection-step-index {
+  background: #133120;
+  color: #83dda4;
+}
+.connection-step > div { display: grid; gap: 2px; }
+.connection-step strong { font-size: 11px; }
+.connection-step small { color: #6f7d92; font-size: 9px; }
+.connection-ready {
+  border-radius: 999px;
+  border: 1px solid #28533a;
+  color: #83dda4;
+  background: #0d2015;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 800;
+}
+.connection-onboarding-action {
+  grid-column: 1 / -1;
+  border-top: 1px solid #1b2a3e;
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.connection-onboarding-action > div { display: grid; gap: 3px; }
+.connection-onboarding-action strong { font-size: 11px; }
+.connection-onboarding-action span { color: #6f7d92; font-size: 9px; }
+
+@media (max-width: 940px) {
+  .connection-onboarding { grid-template-columns: 1fr; }
+  .connection-onboarding-action { grid-column: auto; }
+}
+
+@media (max-width: 620px) {
+  .connection-onboarding-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .connection-onboarding-action .primary-button {
+    width: 100%;
+    margin-top: 0;
+  }
+}
