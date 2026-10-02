@@ -6,7 +6,7 @@ import {
   ensureDefaultSubscription,
   getTenantSubscription
 } from "../billing/subscription.js";
-import { getMonthlyUsage } from "../billing/limits.js";
+import { getUsageSnapshot } from "../billing/limits.js";
 
 const router = Router();
 
@@ -30,7 +30,7 @@ router.get("/subscription", async (req, res, next) => {
     const subscription =
       await getTenantSubscription(tenantId) ??
       await ensureDefaultSubscription(tenantId);
-    const usage = await getMonthlyUsage(tenantId);
+    const usage = await getUsageSnapshot(tenantId);
 
     res.json({
       data: {
