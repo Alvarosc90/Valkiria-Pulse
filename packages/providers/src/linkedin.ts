@@ -1,5 +1,5 @@
 import type { PublishRequest, PublishResult } from "@pulse/contracts";
-import { TokenAwareProvider } from "./index.js";
+import { TokenAwareProvider } from "./base.js";
 
 const LINKEDIN_VERSION = "202609";
 
