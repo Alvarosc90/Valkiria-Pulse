@@ -11,8 +11,11 @@ import { config } from "./config.js";
 import connectionsRouter from "./connections/routes.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
+import approvalsRouter from "./routes/approvals.js";
+import auditRouter from "./routes/audit.js";
 import brandsRouter from "./routes/brands.js";
 import calendarsRouter from "./routes/calendars.js";
+import mediaRouter from "./routes/media.js";
 import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
 import {
@@ -54,6 +57,7 @@ app.get("/health", async (_req, res) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/connections", connectionsRouter);
+app.use("/api/v1/media", mediaRouter);
 
 app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, next) => {
   try {
@@ -111,6 +115,8 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
   }
 });
 
+app.use("/api/v1/approvals", requireAuth, requireTenantMatch, approvalsRouter);
+app.use("/api/v1/audit", requireAuth, requireTenantMatch, auditRouter);
 app.use("/api/v1/brands", requireAuth, requireTenantMatch, brandsRouter);
 app.use("/api/v1/calendars", requireAuth, requireTenantMatch, calendarsRouter);
 app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
