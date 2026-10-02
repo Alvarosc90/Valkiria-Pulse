@@ -63,6 +63,23 @@ services:
       api:
         condition: service_healthy
 
+  backup:
+    build:
+      context: ../..
+      dockerfile: deploy/production/Dockerfile.backup
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - pulse_media:/media:ro
+      - ${PULSE_BACKUP_DIR:-/opt/valkiria-pulse/backups}:/backups
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   web:
     build:
       context: ../..
