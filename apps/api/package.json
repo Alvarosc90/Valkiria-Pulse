@@ -6,10 +6,15 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:valky": "tsx watch scripts/dev-valky.ts",
     "start": "tsx src/server.ts",
     "worker": "tsx scripts/worker.ts",
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:agent": "tsx scripts/db-agent.ts",
+    "db:executor": "tsx scripts/db-executor.ts",
+    "db:check": "tsx scripts/db-check.ts",
+    "db:infra:bootstrap": "tsx scripts/db-infra-bootstrap.ts",
     "db:seed:dev": "tsx scripts/seed-dev.ts",
     "social:upsert": "tsx scripts/upsert-social-account.ts"
   },
