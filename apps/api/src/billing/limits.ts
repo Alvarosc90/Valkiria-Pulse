@@ -31,6 +31,33 @@ export async function getMonthlyUsage(tenantId: number) {
   );
 }
 
+export async function getUsageSnapshot(tenantId: number) {
+  const [monthly, brandRows, accountRows, teamRows] = await Promise.all([
+    getMonthlyUsage(tenantId),
+    db.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS total FROM brands WHERE tenant_id = ? AND active = 1",
+      [tenantId]
+    ).then(([rows]) => Number(rows[0]?.total ?? 0)),
+    db.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS total FROM social_accounts WHERE tenant_id = ?",
+      [tenantId]
+    ).then(([rows]) => Number(rows[0]?.total ?? 0)),
+    db.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS total FROM user_tenants WHERE tenant_id = ? AND active = 1",
+      [tenantId]
+    ).then(([rows]) => Number(rows[0]?.total ?? 0))
+  ]);
+
+  return {
+    ...monthly,
+    brands: brandRows,
+    socialAccounts: accountRows,
+    teamMembers: teamRows,
+    scheduledPostsPerMonth: Number(monthly.scheduledPostsPerMonth ?? 0),
+    aiGenerationsPerMonth: Number(monthly.aiGenerationsPerMonth ?? 0)
+  };
+}
+
 export async function incrementMonthlyUsage(
   tenantId: number,
   metric: Extract<BillingMetric, "scheduledPostsPerMonth" | "aiGenerationsPerMonth">,
@@ -69,7 +96,7 @@ export async function assertPlanLimit(input: {
 
   let current = input.currentValue;
   if (current == null) {
-    const usage = await getMonthlyUsage(input.tenantId);
+    const usage = await getUsageSnapshot(input.tenantId);
     current = Number(usage[input.metric] ?? 0);
   }
 
