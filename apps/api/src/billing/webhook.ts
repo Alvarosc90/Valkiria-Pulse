@@ -104,7 +104,7 @@ function assertCommercialMatch(input: {
   frequency?: number | null;
   frequencyType?: string | null;
 }) {
-  const expectedCurrency = row.currency.toUpperCase();
+  const expectedCurrency = input.row.currency.toUpperCase();
   const actualCurrency = String(input.currency ?? "").toUpperCase();
   const expected = expectedAmount(input.row);
   const actual = Number(input.amount);
