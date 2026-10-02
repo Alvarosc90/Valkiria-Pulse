@@ -183,6 +183,17 @@
   pointer-events: none !important;
 }
 
+.contact-privacy {
+  margin: 0;
+  color: #677b93;
+  font-size: 8px;
+  line-height: 1.55;
+}
+.contact-privacy a {
+  color: #65c7f2;
+  text-decoration: none;
+}
+
 .contact-success,
 .contact-error {
   margin: 0;
