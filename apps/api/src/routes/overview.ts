@@ -1,15 +1,12 @@
 import { Router } from "express";
 import type { RowDataPacket } from "mysql2";
-import { z } from "zod";
 import { db } from "../db.js";
 
 const router = Router();
 
 router.get("/", async (req, res, next) => {
   try {
-    const { tenantId } = z.object({
-      tenantId: z.coerce.number().int().positive()
-    }).parse(req.query);
+    const tenantId = Number(req.auth!.tenantId);
 
     const [accounts] = await db.query<RowDataPacket[]>(
       `SELECT platform, status, COUNT(*) AS total
