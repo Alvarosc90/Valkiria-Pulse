@@ -10,3 +10,4 @@ uploads/
 .valky-db/
 *.tsbuildinfo
 package-lock.json
+apps/web/public/assets/branding/4_VALKIRIA PULSE.png
