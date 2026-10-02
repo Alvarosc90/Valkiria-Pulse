@@ -61,9 +61,50 @@ const flow = [
   ["05", "Publicar", "Los providers ejecutan y registran el resultado."]
 ];
 
+function SocialIcon({
+  network,
+  compact = false
+}: {
+  network: "instagram" | "tiktok" | "linkedin";
+  compact?: boolean;
+}) {
+  if (network === "instagram") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="3.4" y="3.4" width="17.2" height="17.2" rx="5.2" fill="none" stroke="currentColor" strokeWidth="2" />
+        <circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" strokeWidth="2" />
+        <circle cx="17.5" cy="6.8" r="1.15" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (network === "tiktok") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          fill="currentColor"
+          d="M14.3 3.2c.5 2.4 1.9 3.9 4.2 4.5v3.2a8.3 8.3 0 0 1-4.2-1.3v5.8a5.6 5.6 0 1 1-4.8-5.5v3.3a2.4 2.4 0 1 0 1.6 2.2V3.2h3.2Z"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="2.8" fill="currentColor" opacity=".18" />
+      <circle cx="7.7" cy="8" r="1.45" fill="currentColor" />
+      <rect x="6.35" y="10.2" width="2.7" height="7.2" rx=".7" fill="currentColor" />
+      <path fill="currentColor" d="M11 10.2h2.6v1c.8-.9 1.8-1.35 3-1.35 2.45 0 3.4 1.55 3.4 4.15v3.4h-2.8v-3.17c0-1.27-.34-2.05-1.55-2.05-1.28 0-1.85.86-1.85 2.35v2.87H11v-7.2Z" />
+    </svg>
+  );
+}
+
 function SocialBadge({ network }: { network: "instagram" | "tiktok" | "linkedin" }) {
-  const labels = { instagram: "IG", tiktok: "TT", linkedin: "in" };
-  return <span className={"landing-social-badge " + network}>{labels[network]}</span>;
+  return (
+    <span className={"landing-social-badge " + network}>
+      <SocialIcon network={network} />
+    </span>
+  );
 }
 
 function DashboardPreview() {
@@ -92,7 +133,12 @@ function DashboardPreview() {
             <div className="preview-agent-row">
               {agents.map((agent) => (
                 <div className={"preview-agent " + agent.key} key={agent.key}>
-                  <span>{agent.badge}</span>
+                  <span className="preview-agent-icon">
+                    <SocialIcon
+                      network={agent.key as "instagram" | "tiktok" | "linkedin"}
+                      compact
+                    />
+                  </span>
                   <div>
                     <strong>{agent.title}</strong>
                     <small>online</small>
