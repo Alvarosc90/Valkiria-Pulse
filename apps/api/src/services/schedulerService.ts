@@ -8,7 +8,10 @@ import type {
 import { pulseOrchestrator } from "../agents/runtime.js";
 import { db } from "../db.js";
 import { providerFor } from "../providers/registry.js";
-import { recentPlatformPosts } from "./agentContextService.js";
+import {
+  platformPerformanceSignals,
+  recentPlatformPosts
+} from "./agentContextService.js";
 
 function json<T>(value: unknown, fallback: T): T {
   if (value == null) return fallback;
@@ -154,16 +157,23 @@ export async function publishDue(limit = 10) {
       );
       await connection.commit();
 
-      const recentPosts = await recentPlatformPosts(
-        Number(row.tenant_id),
-        Number(row.brand_id),
-        row.platform as SocialPlatform
-      );
+      const [recentPosts, performanceSignals] = await Promise.all([
+        recentPlatformPosts(
+          Number(row.tenant_id),
+          Number(row.brand_id),
+          row.platform as SocialPlatform
+        ),
+        platformPerformanceSignals(
+          Number(row.tenant_id),
+          Number(row.brand_id),
+          row.platform as SocialPlatform
+        )
+      ]);
 
       const generated = await pulseOrchestrator.generate(
         toEntry(row),
         toBrand(row),
-        { recentPosts }
+        { recentPosts, performanceSignals }
       );
 
       const content = enrichContent(row, generated);
