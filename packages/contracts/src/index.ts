@@ -17,6 +17,7 @@ export interface BrandContext {
   products: string[];
   approvedClaims: string[];
   forbiddenTerms: string[];
+  ctas?: string[];
 }
 
 export interface CalendarEntry {
@@ -29,7 +30,12 @@ export interface CalendarEntry {
   angle?: string;
   assetRefs: string[];
   notes?: string;
+  platformContext?: Record<string, unknown>;
   status: PublicationStatus;
+}
+
+export interface AgentGenerationContext {
+  recentPosts?: string[];
 }
 
 export interface GeneratedPost {
