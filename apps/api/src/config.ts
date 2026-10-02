@@ -42,6 +42,10 @@ const schema = z.object({
   PULSE_LLM_MODEL: optionalString,
   PULSE_LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
 
+  PULSE_MEDIA_DIR: z.string().min(1).default("./data/media"),
+  PULSE_MEDIA_PUBLIC_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
+  PULSE_MEDIA_MAX_MB: z.coerce.number().int().min(1).max(1024).default(100),
+
   INSTAGRAM_APP_ID: optionalString,
   INSTAGRAM_APP_SECRET: optionalString,
   INSTAGRAM_SCOPES: z.string().default(
