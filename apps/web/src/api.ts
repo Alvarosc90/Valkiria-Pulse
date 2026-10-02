@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4200";
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<boolean> | null = null;
