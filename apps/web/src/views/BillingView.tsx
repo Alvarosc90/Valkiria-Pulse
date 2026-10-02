@@ -34,7 +34,7 @@ type Subscription = {
 
 function formatMoney(price?: Price) {
   if (!price) return "Consultar";
-  const divisor = price.currency === "ARS" ? 100 : 1;
+  const divisor = 100;
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: price.currency,
