@@ -34,6 +34,14 @@ const schema = z.object({
   AUTH_REFRESH_COOKIE: z.string().min(1).default("pulse_refresh"),
   CREDENTIALS_ENCRYPTION_KEY: optionalString,
 
+  PULSE_LLM_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().optional()
+  ),
+  PULSE_LLM_API_KEY: optionalString,
+  PULSE_LLM_MODEL: optionalString,
+  PULSE_LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
+
   INSTAGRAM_APP_ID: optionalString,
   INSTAGRAM_APP_SECRET: optionalString,
   INSTAGRAM_SCOPES: z.string().default(
