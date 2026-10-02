@@ -271,3 +271,10 @@ export function mapMercadoPagoSubscriptionStatus(status: string | null | undefin
 
   return "unknown" as const;
 }
+
+
+export async function getMercadoPagoPayment(paymentId: string) {
+  return mpFetch<any>(
+    "/v1/payments/" + encodeURIComponent(paymentId)
+  );
+}
