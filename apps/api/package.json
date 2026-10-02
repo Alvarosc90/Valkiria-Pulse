@@ -10,7 +10,8 @@
     "worker": "tsx scripts/worker.ts",
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed:dev": "tsx scripts/seed-dev.ts"
+    "db:seed:dev": "tsx scripts/seed-dev.ts",
+    "social:upsert": "tsx scripts/upsert-social-account.ts"
   },
   "dependencies": {
     "@pulse/agents": "*",
