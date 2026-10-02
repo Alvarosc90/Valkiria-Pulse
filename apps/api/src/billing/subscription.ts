@@ -30,7 +30,9 @@ function jsonArray(value: unknown) {
 export async function getTenantSubscription(tenantId: number) {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT
-       ts.tenant_id, ts.plan_key, ts.status, ts.provider,
+       ts.tenant_id, ts.plan_key, ts.plan_price_id,
+       ts.billing_interval, ts.currency,
+       ts.status, ts.provider,
        ts.external_customer_id, ts.external_subscription_id,
        ts.trial_ends_at, ts.current_period_start, ts.current_period_end,
        ts.cancel_at_period_end, ts.metadata_json,
@@ -74,6 +76,9 @@ export async function getTenantSubscription(tenantId: number) {
     },
     status: row.status,
     provider: row.provider,
+    planPriceId: row.plan_price_id == null ? null : Number(row.plan_price_id),
+    billingInterval: row.billing_interval ?? null,
+    currency: row.currency ?? null,
     externalCustomerId: row.external_customer_id,
     externalSubscriptionId: row.external_subscription_id,
     trialEndsAt: row.trial_ends_at,
