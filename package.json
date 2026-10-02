@@ -1,0 +1,11 @@
+{
+  "name": "valkiria-pulse",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @pulse/api",
+    "dev:web": "npm run dev --workspace @pulse/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
