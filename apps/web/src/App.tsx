@@ -100,6 +100,16 @@ export default function App() {
 
   const activeBrand = brands.find((brand) => brand.id === brandId) ?? brands[0];
 
+  function openLogin() {
+    setShowLogin(true);
+    window.history.pushState({}, "", "/?login=1");
+  }
+
+  function backToLanding() {
+    setShowLogin(false);
+    window.history.replaceState({}, "", "/");
+  }
+
   function changeView(nextView: WorkspaceView) {
     setView(nextView);
     window.history.replaceState({}, "", nextView === "overview" ? "/" : "/?view=" + nextView);
@@ -168,6 +178,14 @@ export default function App() {
   }
 
   useEffect(() => {
+    const handlePopState = () => {
+      setShowLogin(
+        new URLSearchParams(window.location.search).get("login") === "1"
+      );
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(
       window.location.hash.replace(/^#/, "")
@@ -206,6 +224,8 @@ export default function App() {
     }
 
     void loadAuth();
+
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   useEffect(() => {
@@ -290,10 +310,12 @@ export default function App() {
   async function logout() {
     await logoutRequest();
     setAuth(null);
+    setShowLogin(false);
     setBrands([]);
     setAccounts([]);
     setEntries([]);
     setView("overview");
+    window.history.replaceState({}, "", "/");
   }
 
   if (booting) {
@@ -311,8 +333,8 @@ export default function App() {
 
   if (!auth) {
     return showLogin
-      ? <LoginScreen onAuthenticated={setAuth} onBack={() => setShowLogin(false)} />
-      : <PublicLanding onLogin={() => setShowLogin(true)} />;
+      ? <LoginScreen onAuthenticated={setAuth} onBack={backToLanding} />
+      : <PublicLanding onLogin={openLogin} />;
   }
 
   const showAudit = auth.role === "owner" || auth.role === "admin";
