@@ -7,3 +7,5 @@ coverage/
 *.log
 tmp/
 uploads/
+.valky-db/
+*.tsbuildinfo
