@@ -2,6 +2,7 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { parseCalendarWorkbook } from "@pulse/calendars";
 import type { SocialPlatform } from "@pulse/contracts";
 import { db } from "../db.js";
+import { assertPlanLimit, incrementMonthlyUsage } from "../billing/limits.js";
 
 function entryStatus(value: unknown) {
   const normalized = String(value ?? "").trim().toLowerCase();
@@ -19,6 +20,13 @@ export async function importCalendar(input: {
   buffer: Buffer;
 }) {
   const parsed = parseCalendarWorkbook(input.buffer, input.platform, input.timezone);
+
+  await assertPlanLimit({
+    tenantId: input.tenantId,
+    metric: "scheduledPostsPerMonth",
+    increment: parsed.rows.length
+  });
+
   const connection = await db.getConnection();
 
   try {
@@ -65,6 +73,14 @@ export async function importCalendar(input: {
     }
 
     await connection.commit();
+
+    if (parsed.rows.length) {
+      await incrementMonthlyUsage(
+        input.tenantId,
+        "scheduledPostsPerMonth",
+        parsed.rows.length
+      );
+    }
 
     return {
       importId: importResult.insertId,

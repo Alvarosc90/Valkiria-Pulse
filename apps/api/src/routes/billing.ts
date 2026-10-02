@@ -1,0 +1,119 @@
+import { Router } from "express";
+import { z } from "zod";
+import { requireRole } from "../auth/middleware.js";
+import { getPlanCatalog } from "../billing/catalog.js";
+import { prepareCheckoutSession } from "../billing/checkout.js";
+import { prepareSubscriptionAction } from "../billing/actions.js";
+import {
+  ensureDefaultSubscription,
+  getTenantSubscription
+} from "../billing/subscription.js";
+import { getUsageSnapshot } from "../billing/limits.js";
+
+const router = Router();
+
+router.get("/catalog", async (req, res, next) => {
+  try {
+    const query = z.object({
+      currency: z.string().length(3).optional(),
+      interval: z.enum(["monthly", "yearly"]).optional()
+    }).parse(req.query);
+
+    const plans = await getPlanCatalog(query);
+    res.json({ data: plans });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/subscription", async (req, res, next) => {
+  try {
+    const tenantId = Number(req.auth!.tenantId);
+    const subscription =
+      await getTenantSubscription(tenantId) ??
+      await ensureDefaultSubscription(tenantId);
+    const usage = await getUsageSnapshot(tenantId);
+
+    res.json({
+      data: {
+        subscription,
+        usage
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post(
+  "/subscription/bootstrap",
+  requireRole("owner", "admin"),
+  async (req, res, next) => {
+    try {
+      const subscription = await ensureDefaultSubscription(
+        Number(req.auth!.tenantId)
+      );
+      res.status(201).json({ data: subscription });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  "/checkout/prepare",
+  requireRole("owner", "admin"),
+  async (req, res, next) => {
+    try {
+      const body = z.object({
+        planKey: z.string().min(1).max(80),
+        currency: z.string().length(3),
+        interval: z.enum(["monthly", "yearly"]),
+        idempotencyKey: z.string().min(8).max(190)
+      }).parse(req.body);
+
+      const prepared = await prepareCheckoutSession({
+        tenantId: Number(req.auth!.tenantId),
+        userId: Number(req.auth!.userId),
+        planKey: body.planKey,
+        currency: body.currency,
+        interval: body.interval,
+        idempotencyKey: body.idempotencyKey
+      });
+
+      res.status(201).json({ data: prepared });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  "/subscription/actions/prepare",
+  requireRole("owner", "admin"),
+  async (req, res, next) => {
+    try {
+      const body = z.object({
+        action: z.enum(["pause", "resume", "cancel", "change_plan"]),
+        idempotencyKey: z.string().min(8).max(190),
+        targetPlanKey: z.string().min(1).max(80).optional(),
+        targetPriceId: z.coerce.number().int().positive().optional()
+      }).parse(req.body);
+
+      const prepared = await prepareSubscriptionAction({
+        tenantId: Number(req.auth!.tenantId),
+        userId: Number(req.auth!.userId),
+        action: body.action,
+        idempotencyKey: body.idempotencyKey,
+        targetPlanKey: body.targetPlanKey,
+        targetPriceId: body.targetPriceId
+      });
+
+      res.status(201).json({ data: prepared });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+export default router;

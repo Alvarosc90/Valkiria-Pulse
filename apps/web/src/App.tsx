@@ -20,6 +20,7 @@ import { AuditView } from "./views/AuditView";
 import { BrandBrainView } from "./views/BrandBrainView";
 import { CalendarView } from "./views/CalendarView";
 import { MediaLibraryView } from "./views/MediaLibraryView";
+import { BillingView } from "./views/BillingView";
 
 type WorkspaceView =
   | "overview"
@@ -27,6 +28,7 @@ type WorkspaceView =
   | "approvals"
   | "media"
   | "agents"
+  | "billing"
   | "audit";
 
 const platforms: Array<{
@@ -60,7 +62,8 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "calendar", label: "Calendarios" },
   { id: "approvals", label: "Publicaciones" },
   { id: "media", label: "Biblioteca" },
-  { id: "agents", label: "Agentes" }
+  { id: "agents", label: "Agentes" },
+  { id: "billing", label: "Plan y uso" }
 ];
 
 export default function App() {
@@ -175,6 +178,7 @@ export default function App() {
       requestedView === "approvals" ||
       requestedView === "media" ||
       requestedView === "agents" ||
+      requestedView === "billing" ||
       requestedView === "audit"
     ) {
       setView(requestedView);
@@ -592,6 +596,10 @@ export default function App() {
             role={auth.role}
             onNotice={setNotice}
           />
+        )}
+
+        {view === "billing" && (
+          <BillingView role={auth.role} onNotice={setNotice} />
         )}
 
         {view === "audit" && showAudit && (

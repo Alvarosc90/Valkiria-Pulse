@@ -1,8 +1,11 @@
 import { Router } from "express";
+import type { RowDataPacket } from "mysql2";
 import { z } from "zod";
 import type { SocialPlatform } from "@pulse/contracts";
 import { requireAuth, requireRole } from "../auth/middleware.js";
+import { assertPlanLimit } from "../billing/limits.js";
 import { config } from "../config.js";
+import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
 import { authorizationUrl, exchangeAuthorizationCode } from "./oauthClients.js";
 import { consumeOAuthState, createOAuthState } from "./oauthStateService.js";
@@ -40,8 +43,32 @@ router.post(
         returnTo: z.string().max(500).optional()
       }).parse(req.body);
 
+      const tenantId = Number(req.auth!.tenantId);
+
+      const [existingRows] = await db.query<RowDataPacket[]>(
+        `SELECT id
+         FROM social_accounts
+         WHERE tenant_id = ? AND brand_id = ? AND platform = ?
+         LIMIT 1`,
+        [tenantId, body.brandId, platform]
+      );
+
+      if (!existingRows[0]) {
+        const [countRows] = await db.query<RowDataPacket[]>(
+          "SELECT COUNT(*) AS total FROM social_accounts WHERE tenant_id = ?",
+          [tenantId]
+        );
+
+        await assertPlanLimit({
+          tenantId,
+          metric: "socialAccounts",
+          currentValue: Number(countRows[0]?.total ?? 0),
+          increment: 1
+        });
+      }
+
       const state = await createOAuthState({
-        tenantId: Number(req.auth!.tenantId),
+        tenantId,
         brandId: body.brandId,
         userId: Number(req.auth!.userId),
         platform,

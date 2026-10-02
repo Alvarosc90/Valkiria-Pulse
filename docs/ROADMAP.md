@@ -29,7 +29,8 @@
 ## Phase 4 - Productization
 - [x] Production Docker deployment stack
 - [ ] Deploy production at pulse.valkiria.tech
-- [ ] Plans and billing
+- [x] Plans, limits and subscription foundation
+- [ ] Commercial pricing and payment-provider checkout
 - [x] TrainIA SSO/module button
 - [x] Team approvals
 - [x] Audit log

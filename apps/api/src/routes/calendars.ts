@@ -3,6 +3,7 @@ import multer from "multer";
 import type { ResultSetHeader } from "mysql2";
 import { z } from "zod";
 import { requireRole } from "../auth/middleware.js";
+import { assertPlanLimit, incrementMonthlyUsage } from "../billing/limits.js";
 import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
 import { auditEvent } from "../services/auditService.js";
@@ -85,6 +86,13 @@ router.post(
       }).parse(req.body);
 
       const tenantId = Number(req.auth!.tenantId);
+
+      await assertPlanLimit({
+        tenantId,
+        metric: "scheduledPostsPerMonth",
+        increment: 1
+      });
+
       const [brands] = await db.query<any[]>(
         "SELECT id FROM brands WHERE id = ? AND tenant_id = ? AND active = 1 LIMIT 1",
         [body.brandId, tenantId]
@@ -116,6 +124,8 @@ router.post(
           JSON.stringify(body.platformContext)
         ]
       );
+
+      await incrementMonthlyUsage(tenantId, "scheduledPostsPerMonth", 1);
 
       await auditEvent({
         tenantId,
