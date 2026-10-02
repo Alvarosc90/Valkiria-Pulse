@@ -28,6 +28,8 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
+    volumes:
+      - pulse_media:/app/data/media
     command:
       - sh
       - -c
@@ -54,6 +56,8 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
+    volumes:
+      - pulse_media:/app/data/media
     command: ["npm", "run", "worker", "--workspace", "@pulse/api"]
     depends_on:
       api:
@@ -72,3 +76,4 @@ services:
 
 volumes:
   pulse_mysql:
+  pulse_media:
