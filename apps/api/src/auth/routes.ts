@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { config } from "../config.js";
@@ -65,11 +65,7 @@ function allowedOrigins() {
   );
 }
 
-function requireSameOrigin(
-  req: Parameters<Parameters<typeof router.post>[1]>[0],
-  res: Parameters<Parameters<typeof router.post>[1]>[1],
-  next: Parameters<Parameters<typeof router.post>[1]>[2]
-) {
+const requireSameOrigin: RequestHandler = (req, res, next) => {
   const origin = req.get("origin");
   if (!origin) {
     next();
@@ -83,7 +79,7 @@ function requireSameOrigin(
     return;
   }
   next();
-}
+};
 
 router.post("/signup", signupLimiter, async (req, res, next) => {
   try {
