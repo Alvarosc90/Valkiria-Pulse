@@ -7,7 +7,35 @@ export class TikTokProvider extends TokenAwareProvider {
   async publish(request: PublishRequest): Promise<PublishResult> {
     const token = await this.token(request.accountId);
     const videoUrl = this.requiredMetadata<string>(request, "videoUrl");
-    const privacy = (request.content.metadata?.privacy as string | undefined) ?? "SELF_ONLY";
+
+    const creator = await this.creatorInfo(request.accountId);
+    const allowedPrivacy = Array.isArray(creator?.privacy_level_options)
+      ? creator.privacy_level_options.map(String)
+      : [];
+
+    const requestedPrivacy =
+      (request.content.metadata?.privacy as string | undefined) ?? "SELF_ONLY";
+    const privacy = request.content.metadata?.sandbox === true
+      ? "SELF_ONLY"
+      : requestedPrivacy;
+
+    if (allowedPrivacy.length && !allowedPrivacy.includes(privacy)) {
+      return {
+        platform: this.platform,
+        status: "failed",
+        error: "TikTok privacy level is not allowed for this creator: " + privacy
+      };
+    }
+
+    const disableDuet =
+      Boolean(request.content.metadata?.disableDuet ?? false) ||
+      Boolean(creator?.duet_disabled ?? false);
+    const disableComment =
+      Boolean(request.content.metadata?.disableComment ?? false) ||
+      Boolean(creator?.comment_disabled ?? false);
+    const disableStitch =
+      Boolean(request.content.metadata?.disableStitch ?? false) ||
+      Boolean(creator?.stitch_disabled ?? false);
 
     const response = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
       method: "POST",
@@ -19,10 +47,12 @@ export class TikTokProvider extends TokenAwareProvider {
         post_info: {
           title: request.content.title ?? request.content.caption,
           privacy_level: privacy,
-          disable_duet: Boolean(request.content.metadata?.disableDuet ?? false),
-          disable_comment: Boolean(request.content.metadata?.disableComment ?? false),
-          disable_stitch: Boolean(request.content.metadata?.disableStitch ?? false),
-          video_cover_timestamp_ms: Number(request.content.metadata?.coverTimestampMs ?? 1000)
+          disable_duet: disableDuet,
+          disable_comment: disableComment,
+          disable_stitch: disableStitch,
+          video_cover_timestamp_ms: Number(
+            request.content.metadata?.coverTimestampMs ?? 1000
+          )
         },
         source_info: {
           source: "PULL_FROM_URL",
