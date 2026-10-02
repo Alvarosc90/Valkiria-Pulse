@@ -8,6 +8,7 @@ import {
   startCheckoutSession
 } from "../billing/checkout.js";
 import { prepareSubscriptionAction } from "../billing/actions.js";
+import { executeSubscriptionAction } from "../billing/actionExecutor.js";
 import {
   ensureDefaultSubscription,
   getTenantSubscription
@@ -174,6 +175,44 @@ router.post(
       });
 
       res.status(201).json({ data: prepared });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+
+router.post(
+  "/subscription/actions/:actionId/execute",
+  requireRole("owner", "admin"),
+  async (req, res, next) => {
+    try {
+      const actionId = z.string().uuid().parse(req.params.actionId);
+      const tenantId = Number(req.auth!.tenantId);
+      const userId = Number(req.auth!.userId);
+
+      const result = await executeSubscriptionAction({
+        tenantId,
+        userId,
+        actionId
+      });
+
+      await auditEvent({
+        tenantId,
+        userId,
+        action: "billing.subscription_action_executed",
+        entityType: "billing_subscription_action",
+        entityId: actionId,
+        metadata: {
+          action: result.action,
+          status: result.status,
+          provider: result.provider ?? null
+        },
+        ip: req.ip,
+        userAgent: req.get("user-agent")
+      });
+
+      res.json({ data: result });
     } catch (error) {
       next(error);
     }
