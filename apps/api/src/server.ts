@@ -16,6 +16,7 @@ import connectionsRouter from "./connections/routes.js";
 import { pingDb } from "./db.js";
 import { errorHandler } from "./http/errorHandler.js";
 import integrationsRouter from "./integrations/routes.js";
+import analyticsRouter from "./routes/analytics.js";
 import approvalsRouter from "./routes/approvals.js";
 import auditRouter from "./routes/audit.js";
 import billingRouter from "./routes/billing.js";
@@ -134,6 +135,7 @@ app.post("/api/v1/generate", requireAuth, requireTenantMatch, async (req, res, n
   }
 });
 
+app.use("/api/v1/analytics", requireAuth, requireTenantMatch, analyticsRouter);
 app.use("/api/v1/approvals", requireAuth, requireTenantMatch, approvalsRouter);
 app.use("/api/v1/audit", requireAuth, requireTenantMatch, auditRouter);
 app.use("/api/v1/billing", requireAuth, requireTenantMatch, billingRouter);
