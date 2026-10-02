@@ -8,7 +8,8 @@ export type BillingMetric =
   | "socialAccounts"
   | "scheduledPostsPerMonth"
   | "teamMembers"
-  | "aiGenerationsPerMonth";
+  | "aiGenerationsPerMonth"
+  | "mediaStorageBytes";
 
 function limitFrom(plan: any, metric: BillingMetric): number | null {
   const value = Number(plan?.limits?.[metric]);
@@ -32,7 +33,7 @@ export async function getMonthlyUsage(tenantId: number) {
 }
 
 export async function getUsageSnapshot(tenantId: number) {
-  const [monthly, brandRows, accountRows, teamRows] = await Promise.all([
+  const [monthly, brandRows, accountRows, teamRows, mediaStorageBytes] = await Promise.all([
     getMonthlyUsage(tenantId),
     db.query<RowDataPacket[]>(
       "SELECT COUNT(*) AS total FROM brands WHERE tenant_id = ? AND active = 1",
@@ -45,6 +46,10 @@ export async function getUsageSnapshot(tenantId: number) {
     db.query<RowDataPacket[]>(
       "SELECT COUNT(*) AS total FROM user_tenants WHERE tenant_id = ? AND active = 1",
       [tenantId]
+    ).then(([rows]) => Number(rows[0]?.total ?? 0)),
+    db.query<RowDataPacket[]>(
+      "SELECT COALESCE(SUM(size_bytes), 0) AS total FROM media_assets WHERE tenant_id = ?",
+      [tenantId]
     ).then(([rows]) => Number(rows[0]?.total ?? 0))
   ]);
 
@@ -53,6 +58,7 @@ export async function getUsageSnapshot(tenantId: number) {
     brands: brandRows,
     socialAccounts: accountRows,
     teamMembers: teamRows,
+    mediaStorageBytes,
     scheduledPostsPerMonth: Number(monthly.scheduledPostsPerMonth ?? 0),
     aiGenerationsPerMonth: Number(monthly.aiGenerationsPerMonth ?? 0)
   };
