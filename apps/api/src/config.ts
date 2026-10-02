@@ -46,6 +46,10 @@ const schema = z.object({
   PULSE_MEDIA_PUBLIC_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
   PULSE_MEDIA_MAX_MB: z.coerce.number().int().min(1).max(1024).default(100),
 
+  TRAINIA_SSO_SECRET: optionalSecret,
+  TRAINIA_SSO_ISSUER: z.string().min(1).default("trainia"),
+  TRAINIA_SSO_AUDIENCE: z.string().min(1).default("valkiria-pulse"),
+
   INSTAGRAM_APP_ID: optionalString,
   INSTAGRAM_APP_SECRET: optionalString,
   INSTAGRAM_SCOPES: z.string().default(
