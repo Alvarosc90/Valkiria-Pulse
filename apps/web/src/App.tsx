@@ -6,48 +6,27 @@ import {
   logoutRequest,
   refreshAccessToken
 } from "./api";
+import type {
+  AuthContext,
+  Brand,
+  CalendarEntry,
+  Platform,
+  SocialAccount,
+  TenantOption
+} from "./types";
+import { ApprovalsView } from "./views/ApprovalsView";
+import { AuditView } from "./views/AuditView";
+import { BrandBrainView } from "./views/BrandBrainView";
+import { CalendarView } from "./views/CalendarView";
+import { MediaLibraryView } from "./views/MediaLibraryView";
 
-type Platform = "instagram" | "tiktok" | "linkedin";
-
-type CalendarEntry = {
-  id: number;
-  platform: Platform;
-  scheduledAtUtc: string;
-  timezone: string;
-  topic: string;
-  objective?: string;
-  status: string;
-};
-
-type AuthContext = {
-  userId: string;
-  tenantId: string;
-  role: "owner" | "admin" | "editor" | "viewer";
-  user: { email: string; displayName: string };
-  tenant: { name: string; slug: string };
-};
-
-type Brand = {
-  id: number;
-  name: string;
-  description?: string;
-};
-
-type SocialAccount = {
-  id: number;
-  brandId: number;
-  platform: Platform;
-  username?: string;
-  displayName?: string;
-  status: string;
-};
-
-type TenantOption = {
-  id: string;
-  name: string;
-  slug: string;
-  role: string;
-};
+type WorkspaceView =
+  | "overview"
+  | "calendar"
+  | "approvals"
+  | "media"
+  | "agents"
+  | "audit";
 
 const platforms: Array<{
   id: Platform;
@@ -75,6 +54,14 @@ const platforms: Array<{
   }
 ];
 
+const navigation: Array<{ id: WorkspaceView; label: string }> = [
+  { id: "overview", label: "Resumen" },
+  { id: "calendar", label: "Calendarios" },
+  { id: "approvals", label: "Publicaciones" },
+  { id: "media", label: "Biblioteca" },
+  { id: "agents", label: "Agentes" }
+];
+
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [auth, setAuth] = useState<AuthContext | null>(null);
@@ -83,6 +70,7 @@ export default function App() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [view, setView] = useState<WorkspaceView>("overview");
   const [uploadState, setUploadState] = useState<Record<Platform, string>>({
     instagram: "Listo para importar",
     tiktok: "Listo para importar",
@@ -97,6 +85,11 @@ export default function App() {
   );
 
   const activeBrand = brands.find((brand) => brand.id === brandId) ?? brands[0];
+
+  function changeView(nextView: WorkspaceView) {
+    setView(nextView);
+    window.history.replaceState({}, "", nextView === "overview" ? "/" : "/?view=" + nextView);
+  }
 
   async function loadAuth() {
     const refreshed = await refreshAccessToken();
@@ -127,7 +120,7 @@ export default function App() {
 
     if (nextBrandId) {
       const accountPayload = await apiJson<{ data: SocialAccount[] }>(
-        `/api/v1/social-accounts?brandId=${nextBrandId}`
+        "/api/v1/social-accounts?brandId=" + nextBrandId
       );
       setAccounts(accountPayload.data ?? []);
     } else {
@@ -145,22 +138,35 @@ export default function App() {
   async function refreshAccounts(nextBrandId = brandId) {
     if (!nextBrandId) return;
     const payload = await apiJson<{ data: SocialAccount[] }>(
-      `/api/v1/social-accounts?brandId=${nextBrandId}`
+      "/api/v1/social-accounts?brandId=" + nextBrandId
     );
     setAccounts(payload.data ?? []);
   }
 
   useEffect(() => {
-    void loadAuth();
-
     const params = new URLSearchParams(window.location.search);
-    if (params.get("connection") === "success") {
-      setNotice(`${params.get("social") ?? "Red social"} conectada correctamente.`);
-      window.history.replaceState({}, "", window.location.pathname);
-    } else if (params.get("connection") === "error") {
-      setNotice(`No se pudo completar la conexion: ${params.get("reason") ?? "error"}`);
-      window.history.replaceState({}, "", window.location.pathname);
+    const requestedView = params.get("view");
+    if (
+      requestedView === "calendar" ||
+      requestedView === "approvals" ||
+      requestedView === "media" ||
+      requestedView === "agents" ||
+      requestedView === "audit"
+    ) {
+      setView(requestedView);
     }
+
+    if (params.get("connection") === "success") {
+      setNotice((params.get("social") ?? "Red social") + " conectada correctamente.");
+      setView("overview");
+      window.history.replaceState({}, "", "/");
+    } else if (params.get("connection") === "error") {
+      setNotice("No se pudo completar la conexión: " + (params.get("reason") ?? "error"));
+      setView("overview");
+      window.history.replaceState({}, "", "/");
+    }
+
+    void loadAuth();
   }, []);
 
   useEffect(() => {
@@ -177,7 +183,10 @@ export default function App() {
 
   async function uploadCalendar(platform: Platform, file: File) {
     if (!brandId) {
-      setUploadState((current) => ({ ...current, [platform]: "Primero selecciona una marca" }));
+      setUploadState((current) => ({
+        ...current,
+        [platform]: "Primero selecciona una marca"
+      }));
       return;
     }
 
@@ -203,13 +212,15 @@ export default function App() {
       const data = payload.data;
       setUploadState((current) => ({
         ...current,
-        [platform]: `${data.valid} filas listas · ${data.invalid} con observaciones`
+        [platform]:
+          String(data.valid) + " filas listas · " +
+          String(data.invalid) + " con observaciones"
       }));
       await refreshCalendar();
     } catch (error) {
       setUploadState((current) => ({
         ...current,
-        [platform]: error instanceof Error ? error.message : "Error de importacion"
+        [platform]: error instanceof Error ? error.message : "Error de importación"
       }));
     }
   }
@@ -218,22 +229,22 @@ export default function App() {
     if (!brandId) return;
 
     try {
-      setNotice(`Abriendo autorizacion de ${platform}...`);
+      setNotice("Abriendo autorización de " + platform + "...");
       const payload = await apiJson<{ data: { authorizationUrl: string } }>(
-        `/api/v1/connections/${platform}/start`,
+        "/api/v1/connections/" + platform + "/start",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             brandId,
-            returnTo: "/?view=connections"
+            returnTo: "/"
           })
         }
       );
 
       window.location.assign(payload.data.authorizationUrl);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "No se pudo iniciar la conexion");
+      setNotice(error instanceof Error ? error.message : "No se pudo iniciar la conexión");
     }
   }
 
@@ -243,6 +254,7 @@ export default function App() {
     setBrands([]);
     setAccounts([]);
     setEntries([]);
+    setView("overview");
   }
 
   if (booting) {
@@ -259,6 +271,8 @@ export default function App() {
     return <LoginScreen onAuthenticated={setAuth} />;
   }
 
+  const showAudit = auth.role === "owner" || auth.role === "admin";
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -271,11 +285,23 @@ export default function App() {
         </div>
 
         <nav>
-          <button className="nav-item active">Resumen</button>
-          <button className="nav-item">Calendarios</button>
-          <button className="nav-item">Publicaciones</button>
-          <button className="nav-item">Biblioteca</button>
-          <button className="nav-item">Agentes</button>
+          {navigation.map((item) => (
+            <button
+              key={item.id}
+              className={view === item.id ? "nav-item active" : "nav-item"}
+              onClick={() => changeView(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+          {showAudit && (
+            <button
+              className={view === "audit" ? "nav-item active" : "nav-item"}
+              onClick={() => changeView("audit")}
+            >
+              Auditoría
+            </button>
+          )}
           <button className="nav-item muted">Analytics · pronto</button>
         </nav>
 
@@ -288,7 +314,7 @@ export default function App() {
             </div>
           </div>
           <button className="logout-button" onClick={() => void logout()}>
-            Cerrar sesion
+            Cerrar sesión
           </button>
         </div>
       </aside>
@@ -297,13 +323,19 @@ export default function App() {
         <header className="topbar">
           <div>
             <span className="eyebrow">Social command center</span>
-            <h1>Tu marca tiene un pulso distinto en cada red.</h1>
+            <h1>
+              {view === "overview"
+                ? "Tu marca tiene un pulso distinto en cada red."
+                : "Valkiria PULSE"}
+            </h1>
             <p>
-              Tres agentes, tres calendarios y una sola operación. PULSE mantiene separado
-              el contexto editorial de Instagram, TikTok y LinkedIn.
+              Tres agentes, tres calendarios y una sola operación. PULSE mantiene
+              separado el contexto editorial de Instagram, TikTok y LinkedIn.
             </p>
           </div>
-          <button className="primary-button">Nueva publicación</button>
+          <button className="primary-button" onClick={() => changeView("calendar")}>
+            Nueva publicación
+          </button>
         </header>
 
         {notice && (
@@ -326,153 +358,221 @@ export default function App() {
             </select>
           </label>
           <div>
-            <span>Sesion</span>
+            <span>Sesión</span>
             <strong>{auth.user.displayName} · {auth.role}</strong>
           </div>
         </section>
 
-        <section className="stats-grid">
-          <article className="stat-card">
-            <span>Programadas</span>
-            <strong>{entries.filter((entry) => ["ready", "scheduled"].includes(entry.status)).length}</strong>
-            <small>en los tres calendarios</small>
-          </article>
-          <article className="stat-card">
-            <span>Agentes activos</span>
-            <strong>3</strong>
-            <small>contexto aislado por red</small>
-          </article>
-          <article className="stat-card">
-            <span>Redes conectadas</span>
-            <strong>{accounts.filter((account) => account.status === "connected").length}</strong>
-            <small>de 3 disponibles</small>
-          </article>
-          <article className="stat-card">
-            <span>Analytics</span>
-            <strong>—</strong>
-            <small>preparado para permisos futuros</small>
-          </article>
-        </section>
+        {view === "overview" && (
+          <>
+            <section className="stats-grid">
+              <article className="stat-card">
+                <span>Programadas</span>
+                <strong>
+                  {entries.filter((entry) =>
+                    ["ready", "scheduled"].includes(entry.status)
+                  ).length}
+                </strong>
+                <small>en los tres calendarios</small>
+              </article>
+              <article className="stat-card">
+                <span>Agentes activos</span>
+                <strong>3</strong>
+                <small>contexto aislado por red</small>
+              </article>
+              <article className="stat-card">
+                <span>Redes conectadas</span>
+                <strong>
+                  {accounts.filter((account) => account.status === "connected").length}
+                </strong>
+                <small>de 3 disponibles</small>
+              </article>
+              <article className="stat-card">
+                <span>Analytics</span>
+                <strong>—</strong>
+                <small>preparado para permisos futuros</small>
+              </article>
+            </section>
 
-        <section className="section-block">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Agentes especializados</span>
-              <h2>Un cerebro por plataforma</h2>
-            </div>
-            <span className="badge">Brand Brain compartido</span>
-          </div>
-
-          <div className="platform-grid">
-            {platforms.map((platform) => {
-              const account = accounts.find((item) => item.platform === platform.id);
-              const connected = account?.status === "connected";
-
-              return (
-                <article className="platform-card" key={platform.id}>
-                  <div className="platform-header">
-                    <div>
-                      <span className={`platform-icon ${platform.id}`}>
-                        {platform.label.slice(0, 2)}
-                      </span>
-                      <div>
-                        <strong>{platform.label}</strong>
-                        <small>{platform.agent}</small>
-                      </div>
-                    </div>
-                    <span className={connected ? "connection-state connected" : "connection-state"}>
-                      {connected ? "Conectada" : "Sin conectar"}
-                    </span>
-                  </div>
-
-                  <p>{platform.description}</p>
-
-                  {connected && (
-                    <div className="account-line">
-                      <span>{account.displayName ?? account.username ?? "Cuenta conectada"}</span>
-                      <small>API lista</small>
-                    </div>
-                  )}
-
-                  <div className="platform-actions">
-                    <button
-                      className="connect-button"
-                      onClick={() => void connectPlatform(platform.id)}
-                    >
-                      {connected ? "Reconectar" : "Conectar cuenta"}
-                    </button>
-
-                    <label className="upload-button">
-                      Subir Excel
-                      <input
-                        type="file"
-                        accept=".xlsx,.xls"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          if (file) void uploadCalendar(platform.id, file);
-                          event.currentTarget.value = "";
-                        }}
-                      />
-                    </label>
-                  </div>
-
-                  <small className="upload-state">{uploadState[platform.id]}</small>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="section-block two-column">
-          <div>
-            <div className="section-heading compact">
-              <div>
-                <span className="eyebrow">Calendario unificado</span>
-                <h2>Próximas publicaciones</h2>
-              </div>
-            </div>
-
-            <div className="timeline">
-              {upcoming.length === 0 ? (
-                <div className="empty-state">
-                  <strong>Todavía no hay publicaciones importadas.</strong>
-                  <span>Subí uno de los tres Excel para empezar.</span>
+            <section className="section-block">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">Agentes especializados</span>
+                  <h2>Un cerebro por plataforma</h2>
                 </div>
-              ) : (
-                upcoming.map((entry) => (
-                  <div className="timeline-row" key={entry.id}>
-                    <span className={`network-dot ${entry.platform}`} />
-                    <div className="timeline-copy">
-                      <strong>{entry.topic}</strong>
-                      <span>{entry.platform} · {entry.status}</span>
-                    </div>
-                    <time>
-                      {new Date(entry.scheduledAtUtc).toLocaleString("es-AR", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </time>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+                <span className="badge">Brand Brain compartido</span>
+              </div>
 
-          <aside className="agent-panel">
-            <span className="eyebrow">Orquestación</span>
-            <h2>Social Orchestrator</h2>
-            <p>
-              Recibe cada fila importada y la deriva únicamente al agente de su red.
-              El agente crea; el provider publica.
-            </p>
-            <div className="flow-step"><span>01</span><strong>Calendario</strong><small>intención editorial</small></div>
-            <div className="flow-step"><span>02</span><strong>Agente</strong><small>contexto por plataforma</small></div>
-            <div className="flow-step"><span>03</span><strong>Provider</strong><small>API determinística</small></div>
-            <div className="flow-step"><span>04</span><strong>Historial</strong><small>estado y memoria</small></div>
-          </aside>
-        </section>
+              <div className="platform-grid">
+                {platforms.map((platform) => {
+                  const account = accounts.find(
+                    (item) => item.platform === platform.id
+                  );
+                  const connected = account?.status === "connected";
+
+                  return (
+                    <article className="platform-card" key={platform.id}>
+                      <div className="platform-header">
+                        <div>
+                          <span className={"platform-icon " + platform.id}>
+                            {platform.label.slice(0, 2)}
+                          </span>
+                          <div>
+                            <strong>{platform.label}</strong>
+                            <small>{platform.agent}</small>
+                          </div>
+                        </div>
+                        <span
+                          className={
+                            connected
+                              ? "connection-state connected"
+                              : "connection-state"
+                          }
+                        >
+                          {connected ? "Conectada" : "Sin conectar"}
+                        </span>
+                      </div>
+
+                      <p>{platform.description}</p>
+
+                      {connected && (
+                        <div className="account-line">
+                          <span>
+                            {account.displayName ??
+                              account.username ??
+                              "Cuenta conectada"}
+                          </span>
+                          <small>API lista</small>
+                        </div>
+                      )}
+
+                      <div className="platform-actions">
+                        <button
+                          className="connect-button"
+                          onClick={() => void connectPlatform(platform.id)}
+                        >
+                          {connected ? "Reconectar" : "Conectar cuenta"}
+                        </button>
+
+                        <label className="upload-button">
+                          Subir Excel
+                          <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) void uploadCalendar(platform.id, file);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      <small className="upload-state">
+                        {uploadState[platform.id]}
+                      </small>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="section-block two-column">
+              <div>
+                <div className="section-heading compact">
+                  <div>
+                    <span className="eyebrow">Calendario unificado</span>
+                    <h2>Próximas publicaciones</h2>
+                  </div>
+                </div>
+
+                <div className="timeline">
+                  {upcoming.length === 0 ? (
+                    <div className="empty-state">
+                      <strong>Todavía no hay publicaciones importadas.</strong>
+                      <span>Subí uno de los tres Excel para empezar.</span>
+                    </div>
+                  ) : (
+                    upcoming.map((entry) => (
+                      <div className="timeline-row" key={entry.id}>
+                        <span className={"network-dot " + entry.platform} />
+                        <div className="timeline-copy">
+                          <strong>{entry.topic}</strong>
+                          <span>{entry.platform} · {entry.status}</span>
+                        </div>
+                        <time>
+                          {new Date(entry.scheduledAtUtc).toLocaleString("es-AR", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </time>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <aside className="agent-panel">
+                <span className="eyebrow">Orquestación</span>
+                <h2>Social Orchestrator</h2>
+                <p>
+                  Recibe cada fila importada y la deriva únicamente al agente de su red.
+                  El agente crea; el provider publica.
+                </p>
+                <div className="flow-step">
+                  <span>01</span><strong>Calendario</strong><small>intención editorial</small>
+                </div>
+                <div className="flow-step">
+                  <span>02</span><strong>Agente</strong><small>contexto por plataforma</small>
+                </div>
+                <div className="flow-step">
+                  <span>03</span><strong>Provider</strong><small>API determinística</small>
+                </div>
+                <div className="flow-step">
+                  <span>04</span><strong>Historial</strong><small>estado y memoria</small>
+                </div>
+              </aside>
+            </section>
+          </>
+        )}
+
+        {view === "calendar" && (
+          <CalendarView
+            brandId={brandId}
+            entries={entries}
+            onRefresh={refreshCalendar}
+            onNotice={setNotice}
+          />
+        )}
+
+        {view === "approvals" && (
+          <ApprovalsView
+            role={auth.role}
+            onNotice={setNotice}
+            onCalendarRefresh={refreshCalendar}
+          />
+        )}
+
+        {view === "media" && (
+          <MediaLibraryView
+            brandId={brandId}
+            onNotice={setNotice}
+          />
+        )}
+
+        {view === "agents" && (
+          <BrandBrainView
+            brandId={brandId}
+            role={auth.role}
+            onNotice={setNotice}
+          />
+        )}
+
+        {view === "audit" && showAudit && (
+          <AuditView onNotice={setNotice} />
+        )}
       </main>
     </div>
   );
@@ -504,7 +604,11 @@ function LoginScreen({
       const me = await apiJson<{ data: AuthContext }>("/api/v1/auth/me");
       onAuthenticated(me.data);
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "No se pudo iniciar sesion");
+      setError(
+        loginError instanceof Error
+          ? loginError.message
+          : "No se pudo iniciar sesión"
+      );
     } finally {
       setBusy(false);
     }
