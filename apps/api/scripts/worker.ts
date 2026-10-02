@@ -1,24 +1,48 @@
-import { schedulerTick } from "../src/services/schedulerService.js";
 import { db } from "../src/db.js";
+import { schedulerTick } from "../src/services/schedulerService.js";
+import { refreshDueSocialTokens } from "../src/services/socialTokenRefreshService.js";
 
 const intervalMs = Number(process.env.PULSE_WORKER_INTERVAL_MS ?? 30000);
+const tokenRefreshIntervalMs = Number(
+  process.env.PULSE_TOKEN_REFRESH_INTERVAL_MS ?? 15 * 60 * 1000
+);
+
 let stopping = false;
+let lastTokenRefreshAt = 0;
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main() {
-  console.log(JSON.stringify({ service: "pulse-worker", intervalMs, status: "started" }));
+  console.log(JSON.stringify({
+    service: "pulse-worker",
+    intervalMs,
+    tokenRefreshIntervalMs,
+    status: "started"
+  }));
 
   while (!stopping) {
     const startedAt = Date.now();
+
     try {
+      let tokenRefresh: Array<Record<string, unknown>> = [];
+      if (startedAt - lastTokenRefreshAt >= tokenRefreshIntervalMs) {
+        tokenRefresh = await refreshDueSocialTokens();
+        lastTokenRefreshAt = startedAt;
+      }
+
       const result = await schedulerTick();
-      if (result.polled.length || result.published.length) {
+
+      if (
+        tokenRefresh.length ||
+        result.polled.length ||
+        result.published.length
+      ) {
         console.log(JSON.stringify({
           service: "pulse-worker",
           elapsedMs: Date.now() - startedAt,
+          tokenRefresh,
           ...result
         }));
       }
