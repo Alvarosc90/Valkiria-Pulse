@@ -85,9 +85,25 @@ export async function assertPlanLimit(input: {
 
   if (!["trial", "active"].includes(subscription.status)) {
     throw new HttpError(
-      "La suscripcion no esta activa",
+      "La suscripción no está activa",
       402,
       "BILLING_SUBSCRIPTION_INACTIVE"
+    );
+  }
+
+  if (
+    subscription.status === "trial" &&
+    subscription.trialEndsAt &&
+    new Date(subscription.trialEndsAt).getTime() <= Date.now()
+  ) {
+    await db.execute(
+      "UPDATE tenant_subscriptions SET status = 'past_due' WHERE tenant_id = ? AND status = 'trial'",
+      [input.tenantId]
+    );
+    throw new HttpError(
+      "La prueba gratuita finalizó. Elegí un plan para continuar.",
+      402,
+      "BILLING_TRIAL_EXPIRED"
     );
   }
 
