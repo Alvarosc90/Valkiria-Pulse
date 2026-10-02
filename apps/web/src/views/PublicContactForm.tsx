@@ -74,6 +74,11 @@ export function PublicContactForm() {
         <textarea rows={4} value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} />
       </label>
 
+      <p className="contact-privacy wide">
+        Usamos estos datos únicamente para responder tu consulta comercial.
+        <a href="/privacidad" target="_blank" rel="noopener noreferrer"> Ver Privacidad.</a>
+      </p>
+
       {success && <p className="contact-success wide">{success}</p>}
       {error && <p className="contact-error wide">{error}</p>}
 
