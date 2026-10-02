@@ -59,6 +59,8 @@ const platforms: Array<{
   }
 ];
 
+const PULSE_LOGO_SRC = "/assets/branding/4_VALKIRIA%20PULSE.png";
+
 const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "overview", label: "Resumen" },
   { id: "calendar", label: "Calendarios" },
@@ -292,8 +294,11 @@ export default function App() {
   if (booting) {
     return (
       <div className="splash-screen">
-        <div className="brand-mark large">V</div>
-        <strong>Valkiria PULSE</strong>
+        <img
+          className="pulse-logo pulse-logo-splash"
+          src={PULSE_LOGO_SRC}
+          alt="Valkiria PULSE"
+        />
         <span>Preparando tu command center...</span>
       </div>
     );
@@ -308,12 +313,12 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
-          <div className="brand-mark">V</div>
-          <div className="brand-copy">
-            <strong>Valkiria</strong>
-            <span>PULSE</span>
-          </div>
+        <div className="sidebar-brand">
+          <img
+            className="pulse-logo pulse-logo-sidebar"
+            src={PULSE_LOGO_SRC}
+            alt="Valkiria PULSE"
+          />
         </div>
 
         <nav>
@@ -658,11 +663,11 @@ function LoginScreen({
       <section className="login-brand">
         <span className="eyebrow">Valkiria Project</span>
         <div className="login-logo">
-          <div className="brand-mark large">V</div>
-          <div>
-            <strong>Valkiria</strong>
-            <span>PULSE</span>
-          </div>
+          <img
+            className="pulse-logo pulse-logo-login"
+            src={PULSE_LOGO_SRC}
+            alt="Valkiria PULSE"
+          />
         </div>
         <h1>Contenido distinto. Contexto correcto. Una sola operación.</h1>
         <p>
