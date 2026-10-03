@@ -54,6 +54,8 @@ Required production secrets:
 - `MERCADOPAGO_WEBHOOK_SECRET`
 - `MERCADOPAGO_MODE=production`
 
+PULSE production now fails closed: if `MERCADOPAGO_MODE=production` is selected and either Mercado Pago secret is missing, the API refuses to start and the deployment security preflight fails.
+
 Secrets are server-only. The UI exposes only configured/not-configured state.
 
 ## Safety controls
