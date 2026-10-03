@@ -19,7 +19,7 @@ export async function importCalendar(input: {
   filename: string;
   buffer: Buffer;
 }) {
-  const parsed = parseCalendarWorkbook(input.buffer, input.platform, input.timezone);
+  const parsed = await parseCalendarWorkbook(input.buffer, input.platform, input.timezone);
 
   await assertPlanLimit({
     tenantId: input.tenantId,
