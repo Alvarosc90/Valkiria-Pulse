@@ -234,6 +234,18 @@ export async function getCheckoutSession(input: {
   tenantId: number;
   checkoutId: string;
 }) {
+  await db.execute(
+    `UPDATE billing_checkout_sessions
+     SET status = 'expired',
+         provider_status = COALESCE(provider_status, 'expired')
+     WHERE id = ?
+       AND tenant_id = ?
+       AND status IN ('prepared','pending')
+       AND expires_at IS NOT NULL
+       AND expires_at <= UTC_TIMESTAMP()`,
+    [input.checkoutId, input.tenantId]
+  );
+
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id, plan_key AS planKey, provider, status,
             provider_status AS providerStatus,
