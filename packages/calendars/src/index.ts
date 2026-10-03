@@ -1,5 +1,5 @@
+import ExcelJS from "@ayocore/exceljs";
 import { DateTime } from "luxon";
-import * as XLSX from "xlsx";
 import type { SocialPlatform } from "@pulse/contracts";
 
 export interface ImportedCalendarRow {
@@ -54,11 +54,20 @@ function textValue(row: Map<string, unknown>, aliases: string[]) {
   return value === undefined ? undefined : String(value).trim();
 }
 
+function excelSerialToDate(serial: number): DateTime | undefined {
+  if (!Number.isFinite(serial)) return undefined;
+  const wholeDays = Math.floor(serial);
+  const epoch = DateTime.utc(1899, 12, 30);
+  const parsed = epoch.plus({ days: wholeDays });
+  return parsed.isValid ? parsed : undefined;
+}
+
 function excelDate(value: unknown): string | undefined {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return DateTime.fromJSDate(value, { zone: "utc" }).toFormat("yyyy-MM-dd");
+  }
   if (typeof value === "number") {
-    const d = XLSX.SSF.parse_date_code(value);
-    if (!d) return undefined;
-    return `${d.y.toString().padStart(4, "0")}-${d.m.toString().padStart(2, "0")}-${d.d.toString().padStart(2, "0")}`;
+    return excelSerialToDate(value)?.toFormat("yyyy-MM-dd");
   }
   const raw = String(value ?? "").trim();
   if (!raw) return undefined;
@@ -72,9 +81,13 @@ function excelDate(value: unknown): string | undefined {
 }
 
 function excelTime(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return DateTime.fromJSDate(value, { zone: "utc" }).toFormat("HH:mm");
+  }
   if (typeof value === "number") {
-    const seconds = Math.round((value % 1) * 86400);
-    const hour = Math.floor(seconds / 3600) % 24;
+    const fraction = ((value % 1) + 1) % 1;
+    const seconds = Math.round(fraction * 86400) % 86400;
+    const hour = Math.floor(seconds / 3600);
     const minute = Math.floor((seconds % 3600) / 60);
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
@@ -84,6 +97,45 @@ function excelTime(value: unknown): string {
     if (parsed.isValid) return parsed.toFormat("HH:mm");
   }
   return "09:00";
+}
+
+function unwrapCellValue(value: ExcelJS.CellValue): unknown {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value;
+  if (typeof value !== "object") return value;
+  if ("result" in value && value.result !== undefined) return value.result;
+  if ("text" in value && typeof value.text === "string") return value.text;
+  if ("richText" in value && Array.isArray(value.richText)) {
+    return value.richText.map((part) => part.text).join("");
+  }
+  if ("hyperlink" in value && typeof value.text === "string") return value.text;
+  return String(value);
+}
+
+function worksheetRows(worksheet: ExcelJS.Worksheet): Array<{ rowNumber: number; raw: Record<string, unknown> }> {
+  const headerRow = worksheet.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    headers[colNumber] = String(unwrapCellValue(cell.value) ?? "").trim();
+  });
+
+  const rows: Array<{ rowNumber: number; raw: Record<string, unknown> }> = [];
+  for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+    const row = worksheet.getRow(rowNumber);
+    const raw: Record<string, unknown> = {};
+    let hasValue = false;
+
+    for (let colNumber = 1; colNumber < headers.length; colNumber += 1) {
+      const header = headers[colNumber];
+      if (!header) continue;
+      const value = unwrapCellValue(row.getCell(colNumber).value);
+      raw[header] = value;
+      if (value !== "" && value !== null && value !== undefined) hasValue = true;
+    }
+
+    if (hasValue) rows.push({ rowNumber, raw });
+  }
+  return rows;
 }
 
 function common(row: Map<string, unknown>, platform: SocialPlatform, timezone: string, rowNumber: number) {
@@ -155,17 +207,17 @@ function parsePlatformRow(platform: SocialPlatform, raw: Record<string, unknown>
   };
 }
 
-export function parseCalendarWorkbook(buffer: Buffer, platform: SocialPlatform, timezone: string): CalendarImportResult {
-  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: false });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) throw new Error("El Excel no contiene hojas");
-  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], { defval: "" });
+export async function parseCalendarWorkbook(buffer: Buffer, platform: SocialPlatform, timezone: string): Promise<CalendarImportResult> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) throw new Error("El Excel no contiene hojas");
 
+  const rawRows = worksheetRows(worksheet);
   const rows: ImportedCalendarRow[] = [];
   const errors: CalendarRowError[] = [];
 
-  rawRows.forEach((raw, index) => {
-    const rowNumber = index + 2;
+  rawRows.forEach(({ raw, rowNumber }) => {
     try {
       rows.push(parsePlatformRow(platform, raw, timezone, rowNumber));
     } catch (error) {
