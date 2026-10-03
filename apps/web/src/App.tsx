@@ -71,7 +71,7 @@ const platforms: Array<{
   }
 ];
 
-const PULSE_LOGO_SRC = "/assets/branding/4_VALKIRIA%20PULSE.png";
+const PULSE_LOGO_SRC = "/assets/branding/valkiria-pulse.png";
 
 const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "overview", label: "Resumen" },
