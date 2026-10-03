@@ -12,6 +12,7 @@ process.env.CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 process.env.MERCADOPAGO_WEBHOOK_SECRET = "pulse-test-webhook-secret";
 
 const {
+  mapMercadoPagoPaymentStatus,
   mapMercadoPagoSubscriptionStatus,
   validateMercadoPagoSignature
 } = await import("./mercadoPago.js");
@@ -56,4 +57,14 @@ test("maps subscription statuses without activating pending checkout", () => {
   assert.equal(mapMercadoPagoSubscriptionStatus("paused"), "paused");
   assert.equal(mapMercadoPagoSubscriptionStatus("cancelled"), "cancelled");
   assert.equal(mapMercadoPagoSubscriptionStatus("other"), "unknown");
+});
+
+test("maps Mercado Pago payment states for checkout lifecycle", () => {
+  assert.equal(mapMercadoPagoPaymentStatus("approved"), "approved");
+  assert.equal(mapMercadoPagoPaymentStatus("pending"), "pending");
+  assert.equal(mapMercadoPagoPaymentStatus("in_process"), "pending");
+  assert.equal(mapMercadoPagoPaymentStatus("rejected"), "failed");
+  assert.equal(mapMercadoPagoPaymentStatus("refunded"), "failed");
+  assert.equal(mapMercadoPagoPaymentStatus("charged_back"), "failed");
+  assert.equal(mapMercadoPagoPaymentStatus("other"), "unknown");
 });
