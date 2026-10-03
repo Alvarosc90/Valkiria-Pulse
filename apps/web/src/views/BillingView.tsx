@@ -44,6 +44,12 @@ type ProviderStatus = {
   mode: string;
 };
 
+type ProviderAccount = {
+  id: string | null;
+  nickname: string | null;
+  countryId: string | null;
+};
+
 function formatMoney(price?: Price) {
   if (!price) return "No disponible";
   return new Intl.NumberFormat("es-AR", {
@@ -85,6 +91,8 @@ export function BillingView({
   const [loading, setLoading] = useState(true);
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [testingProvider, setTestingProvider] = useState(false);
+  const [providerAccount, setProviderAccount] = useState<ProviderAccount | null>(null);
 
   const canManage = role === "owner" || role === "admin";
 
@@ -119,6 +127,38 @@ export function BillingView({
   useEffect(() => {
     void load();
   }, [currency, interval]);
+
+  async function testProviderConnection() {
+    if (role !== "owner" || !provider?.configured) return;
+
+    setTestingProvider(true);
+    try {
+      const result = await apiJson<{
+        data: {
+          ok: boolean;
+          provider: string;
+          mode: string;
+          account: ProviderAccount;
+        };
+      }>("/api/v1/billing/provider/test", { method: "POST" });
+
+      setProviderAccount(result.data.account);
+      onNotice(
+        "Mercado Pago conectado" +
+          (result.data.account.nickname ? " · " + result.data.account.nickname : "") +
+          "."
+      );
+    } catch (error) {
+      setProviderAccount(null);
+      onNotice(
+        error instanceof Error
+          ? error.message
+          : "No se pudo validar la conexión con Mercado Pago"
+      );
+    } finally {
+      setTestingProvider(false);
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -320,14 +360,29 @@ export function BillingView({
           <span className={provider?.configured ? "status-dot" : "status-dot offline"} />
           <strong>Mercado Pago</strong>
           <small>
-            {provider?.configured
-              ? "Cobros configurados · " + provider.mode
-              : "Pendiente de credencial segura"}
+            {providerAccount
+              ? "Cuenta " +
+                (providerAccount.nickname ?? providerAccount.id ?? "validada") +
+                (providerAccount.countryId ? " · " + providerAccount.countryId : "")
+              : provider?.configured
+                ? "Cobros configurados · " + provider.mode
+                : "Pendiente de credencial segura"}
           </small>
         </div>
-        <span className={provider?.webhookConfigured ? "billing-safe" : "billing-warning"}>
-          {provider?.webhookConfigured ? "Webhook verificado" : "Webhook pendiente"}
-        </span>
+        <div className="billing-current-actions">
+          <span className={provider?.webhookConfigured ? "billing-safe" : "billing-warning"}>
+            {provider?.webhookConfigured ? "Webhook configurado" : "Webhook pendiente"}
+          </span>
+          {role === "owner" && provider?.configured && (
+            <button
+              className="mini-button"
+              disabled={testingProvider}
+              onClick={() => void testProviderConnection()}
+            >
+              {testingProvider ? "Validando..." : "Probar conexión"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="current-plan-card">
