@@ -8,9 +8,9 @@
   },
   "types": "./src/index.ts",
   "dependencies": {
+    "@ayocore/exceljs": "^5.0.4",
     "@pulse/contracts": "*",
-    "luxon": "^3.7.2",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "luxon": "^3.7.2"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
