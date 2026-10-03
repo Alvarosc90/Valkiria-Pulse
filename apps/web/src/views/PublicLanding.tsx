@@ -2,7 +2,8 @@ import { PublicContactForm } from "./PublicContactForm";
 import { PublicPulseAssistant } from "./PublicPulseAssistant";
 import type { LegalType } from "../legal";
 
-const PULSE_LOGO_SRC = "/assets/branding/4_VALKIRIA%20PULSE.png";
+const PULSE_LOGO_SRC = "/assets/branding/valkiria-pulse.png";
+const PULSE_LOGO_FALLBACK_SRC = "/assets/branding/valkiria-pulse.svg";
 
 const agents = [
   {
@@ -264,7 +265,7 @@ export function PublicLanding({
     <div className="pulse-landing">
       <header className="landing-header">
         <a className="landing-brand" href="/" aria-label="Valkiria PULSE">
-          <img src={PULSE_LOGO_SRC} alt="Valkiria PULSE" />
+          <img src={PULSE_LOGO_SRC} alt="Valkiria PULSE" onError={(event) => { event.currentTarget.src = PULSE_LOGO_FALLBACK_SRC; }} />
         </a>
 
         <nav className="landing-nav" aria-label="Navegación principal">
