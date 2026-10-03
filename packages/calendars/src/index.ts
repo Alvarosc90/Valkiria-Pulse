@@ -1,4 +1,4 @@
-import ExcelJS from "@ayocore/exceljs";
+import { inflateRawSync } from "node:zlib";
 import { DateTime } from "luxon";
 import type { SocialPlatform } from "@pulse/contracts";
 
@@ -99,43 +99,152 @@ function excelTime(value: unknown): string {
   return "09:00";
 }
 
-function unwrapCellValue(value: ExcelJS.CellValue): unknown {
-  if (value === null || value === undefined) return "";
-  if (value instanceof Date) return value;
-  if (typeof value !== "object") return value;
-  if ("result" in value && value.result !== undefined) return value.result;
-  if ("text" in value && typeof value.text === "string") return value.text;
-  if ("richText" in value && Array.isArray(value.richText)) {
-    return value.richText.map((part) => part.text).join("");
-  }
-  if ("hyperlink" in value && typeof value.text === "string") return value.text;
-  return String(value);
+function decodeXml(value: string) {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
-function worksheetRows(worksheet: ExcelJS.Worksheet): Array<{ rowNumber: number; raw: Record<string, unknown> }> {
-  const headerRow = worksheet.getRow(1);
-  const headers: string[] = [];
-  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-    headers[colNumber] = String(unwrapCellValue(cell.value) ?? "").trim();
-  });
+function findEocd(buffer: Buffer) {
+  const min = Math.max(0, buffer.length - 65557);
+  for (let offset = buffer.length - 22; offset >= min; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === 0x06054b50) return offset;
+  }
+  throw new Error("Archivo XLSX invalido");
+}
 
-  const rows: Array<{ rowNumber: number; raw: Record<string, unknown> }> = [];
-  for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
-    const row = worksheet.getRow(rowNumber);
+function readZipEntries(buffer: Buffer) {
+  const eocd = findEocd(buffer);
+  const totalEntries = buffer.readUInt16LE(eocd + 10);
+  let cursor = buffer.readUInt32LE(eocd + 16);
+  const entries = new Map<string, Buffer>();
+
+  for (let i = 0; i < totalEntries; i += 1) {
+    if (buffer.readUInt32LE(cursor) !== 0x02014b50) throw new Error("Directorio ZIP invalido");
+
+    const method = buffer.readUInt16LE(cursor + 10);
+    const compressedSize = buffer.readUInt32LE(cursor + 20);
+    const nameLength = buffer.readUInt16LE(cursor + 28);
+    const extraLength = buffer.readUInt16LE(cursor + 30);
+    const commentLength = buffer.readUInt16LE(cursor + 32);
+    const localOffset = buffer.readUInt32LE(cursor + 42);
+    const name = buffer.subarray(cursor + 46, cursor + 46 + nameLength).toString("utf8");
+
+    if (buffer.readUInt32LE(localOffset) !== 0x04034b50) throw new Error("Entrada ZIP invalida");
+    const localNameLength = buffer.readUInt16LE(localOffset + 26);
+    const localExtraLength = buffer.readUInt16LE(localOffset + 28);
+    const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+    const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
+
+    let data: Buffer;
+    if (method === 0) data = compressed;
+    else if (method === 8) data = inflateRawSync(compressed);
+    else throw new Error("Metodo de compresion XLSX no soportado");
+
+    entries.set(name, data);
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+
+  return entries;
+}
+
+function sharedStrings(xml: string) {
+  const values: string[] = [];
+  for (const match of xml.matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)) {
+    const parts = Array.from(match[1].matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g), (part) =>
+      decodeXml(part[1])
+    );
+    values.push(parts.join(""));
+  }
+  return values;
+}
+
+function columnIndex(ref: string) {
+  const letters = ref.match(/^[A-Z]+/i)?.[0] ?? "";
+  let index = 0;
+  for (const char of letters.toUpperCase()) index = index * 26 + char.charCodeAt(0) - 64;
+  return index;
+}
+
+function parseWorksheet(xml: string, strings: string[]) {
+  const rows = new Map<number, Map<number, unknown>>();
+
+  for (const rowMatch of xml.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
+    const rowAttrs = rowMatch[1];
+    const rowNumber = Number(rowAttrs.match(/\br="(\d+)"/)?.[1] ?? rows.size + 1);
+    const cells = new Map<number, unknown>();
+
+    for (const cellMatch of rowMatch[2].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+      const attrs = cellMatch[1];
+      const body = cellMatch[2];
+      const ref = attrs.match(/\br="([^"]+)"/)?.[1] ?? "";
+      const type = attrs.match(/\bt="([^"]+)"/)?.[1] ?? "";
+      const col = columnIndex(ref);
+      const raw = body.match(/<v(?:\s[^>]*)?>([\s\S]*?)<\/v>/)?.[1];
+
+      if (!col) continue;
+
+      if (type === "s" && raw !== undefined) {
+        cells.set(col, strings[Number(raw)] ?? "");
+      } else if (type === "inlineStr") {
+        const text = Array.from(body.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g), (part) =>
+          decodeXml(part[1])
+        ).join("");
+        cells.set(col, text);
+      } else if (type === "str" && raw !== undefined) {
+        cells.set(col, decodeXml(raw));
+      } else if (raw !== undefined) {
+        const numeric = Number(raw);
+        cells.set(col, Number.isFinite(numeric) ? numeric : decodeXml(raw));
+      } else {
+        cells.set(col, "");
+      }
+    }
+
+    rows.set(rowNumber, cells);
+  }
+
+  return rows;
+}
+
+function worksheetRows(buffer: Buffer): Array<{ rowNumber: number; raw: Record<string, unknown> }> {
+  const entries = readZipEntries(buffer);
+  const worksheet = entries.get("xl/worksheets/sheet1.xml");
+  if (!worksheet) throw new Error("El Excel no contiene hojas");
+
+  const shared = entries.get("xl/sharedStrings.xml");
+  const strings = shared ? sharedStrings(shared.toString("utf8")) : [];
+  const rows = parseWorksheet(worksheet.toString("utf8"), strings);
+  const headerCells = rows.get(1);
+  if (!headerCells) return [];
+
+  const headers = new Map<number, string>();
+  for (const [column, value] of headerCells.entries()) {
+    const header = String(value ?? "").trim();
+    if (header) headers.set(column, header);
+  }
+
+  const result: Array<{ rowNumber: number; raw: Record<string, unknown> }> = [];
+  const rowNumbers = Array.from(rows.keys()).filter((row) => row >= 2).sort((a, b) => a - b);
+
+  for (const rowNumber of rowNumbers) {
+    const cells = rows.get(rowNumber)!;
     const raw: Record<string, unknown> = {};
     let hasValue = false;
 
-    for (let colNumber = 1; colNumber < headers.length; colNumber += 1) {
-      const header = headers[colNumber];
-      if (!header) continue;
-      const value = unwrapCellValue(row.getCell(colNumber).value);
+    for (const [column, header] of headers.entries()) {
+      const value = cells.get(column) ?? "";
       raw[header] = value;
       if (value !== "" && value !== null && value !== undefined) hasValue = true;
     }
 
-    if (hasValue) rows.push({ rowNumber, raw });
+    if (hasValue) result.push({ rowNumber, raw });
   }
-  return rows;
+
+  return result;
 }
 
 function common(row: Map<string, unknown>, platform: SocialPlatform, timezone: string, rowNumber: number) {
@@ -208,12 +317,7 @@ function parsePlatformRow(platform: SocialPlatform, raw: Record<string, unknown>
 }
 
 export async function parseCalendarWorkbook(buffer: Buffer, platform: SocialPlatform, timezone: string): Promise<CalendarImportResult> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const worksheet = workbook.worksheets[0];
-  if (!worksheet) throw new Error("El Excel no contiene hojas");
-
-  const rawRows = worksheetRows(worksheet);
+  const rawRows = worksheetRows(buffer);
   const rows: ImportedCalendarRow[] = [];
   const errors: CalendarRowError[] = [];
 
