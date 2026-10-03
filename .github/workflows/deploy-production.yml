@@ -83,12 +83,16 @@ jobs:
           fi
 
           chmod 600 .env
+          chmod +x security-preflight.sh deploy.sh
           ./security-preflight.sh .env
           ./deploy.sh
           ./security-preflight.sh .env
 
           docker compose ps
-          curl -fsS http://127.0.0.1:"${PULSE_HTTP_PORT:-8081}"/health
+          WEB_BIND="$(docker compose port web 80)"
+          WEB_PORT="${WEB_BIND##*:}"
+          test -n "$WEB_PORT"
+          curl -fsS "http://127.0.0.1:${WEB_PORT}/health"
           REMOTE
 
       - name: Record deployed revision
