@@ -1323,7 +1323,23 @@
 
   .landing-header { min-height: 68px; }
   .landing-brand img { width: 185px; }
-  .landing-header-actions .landing-login { display: none; }
+  .landing-header-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .landing-header-actions .landing-login {
+    display: inline-flex;
+  }
+
+  .landing-header-actions .landing-login,
+  .landing-header-actions .landing-primary.compact {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
 
   .landing-primary.compact {
     padding: 9px 11px;
