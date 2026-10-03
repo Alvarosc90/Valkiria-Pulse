@@ -111,15 +111,14 @@ fi
 mp_token="$(value_of MERCADOPAGO_ACCESS_TOKEN)"
 mp_webhook="$(value_of MERCADOPAGO_WEBHOOK_SECRET)"
 mp_mode="$(value_of MERCADOPAGO_MODE)"
-if [[ -n "$mp_token" ]]; then
-  if [[ -z "$mp_webhook" ]]; then
-    fail "MERCADOPAGO_WEBHOOK_SECRET is required when Mercado Pago is enabled"
-  fi
-  if [[ "$mp_mode" != "production" ]]; then
-    fail "MERCADOPAGO_MODE must be production before accepting real payments"
-  fi
-else
-  warn "Mercado Pago is not configured; checkout will remain safely disabled"
+if [[ "$mp_mode" != "production" ]]; then
+  fail "MERCADOPAGO_MODE must be production before accepting real payments"
+fi
+if [[ -z "$mp_token" ]]; then
+  fail "MERCADOPAGO_ACCESS_TOKEN is required for PULSE production billing"
+fi
+if [[ -z "$mp_webhook" ]]; then
+  fail "MERCADOPAGO_WEBHOOK_SECRET is required for PULSE production billing"
 fi
 
 if command -v docker >/dev/null 2>&1; then
