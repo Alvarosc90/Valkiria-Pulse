@@ -73,6 +73,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
+      PULSE_BACKUP_DIR: /backups
     volumes:
       - pulse_media:/media:ro
       - ${PULSE_BACKUP_DIR:-/opt/valkiria-pulse/backups}:/backups
