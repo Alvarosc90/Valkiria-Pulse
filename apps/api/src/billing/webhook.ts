@@ -5,6 +5,7 @@ import { HttpError } from "../http/httpError.js";
 import {
   getMercadoPagoPayment,
   getMercadoPagoSubscription,
+  mapMercadoPagoPaymentStatus,
   mapMercadoPagoSubscriptionStatus,
   validateMercadoPagoSignature
 } from "./mercadoPago.js";
@@ -295,8 +296,9 @@ async function processPayment(dataId: string) {
   }
 
   const status = String(payment?.status ?? "unknown").toLowerCase();
+  const mapped = mapMercadoPagoPaymentStatus(status);
 
-  if (status === "approved") {
+  if (mapped === "approved") {
     assertCommercialMatch({
       row,
       currency: payment?.currency_id,
@@ -320,9 +322,45 @@ async function processPayment(dataId: string) {
       currentPeriodEnd: null,
       providerStatus: "authorized"
     });
-  } else if (
-    ["rejected", "cancelled", "cancelled_by_collector", "refunded", "charged_back"].includes(status)
-  ) {
+  } else if (mapped === "pending") {
+    await db.execute(
+      `UPDATE billing_checkout_sessions
+       SET status = 'pending',
+           provider = 'mercadopago',
+           provider_status = ?,
+           provider_payload_json = ?
+       WHERE id = ?
+         AND status IN ('prepared','pending')`,
+      [
+        status,
+        JSON.stringify({
+          paymentId: String(payment?.id ?? dataId),
+          paymentStatus: status
+        }),
+        row.id
+      ]
+    );
+  } else if (mapped === "failed") {
+    await db.execute(
+      `UPDATE billing_checkout_sessions
+       SET status = CASE
+             WHEN status IN ('prepared','pending') THEN 'failed'
+             ELSE status
+           END,
+           provider = 'mercadopago',
+           provider_status = ?,
+           provider_payload_json = ?
+       WHERE id = ?`,
+      [
+        status,
+        JSON.stringify({
+          paymentId: String(payment?.id ?? dataId),
+          paymentStatus: status
+        }),
+        row.id
+      ]
+    );
+
     await db.execute(
       `UPDATE tenant_subscriptions
        SET status = 'past_due',
@@ -345,7 +383,8 @@ async function processPayment(dataId: string) {
     matched: true as const,
     tenantId: row.tenant_id,
     checkoutId: row.id,
-    paymentStatus: status
+    paymentStatus: status,
+    paymentState: mapped
   };
 }
 
