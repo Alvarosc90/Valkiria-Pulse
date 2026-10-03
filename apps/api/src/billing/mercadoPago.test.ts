@@ -6,10 +6,14 @@ process.env.NODE_ENV = "test";
 process.env.DB_HOST = "127.0.0.1";
 process.env.DB_USER = "pulse";
 process.env.DB_NAME = "pulse_test";
-process.env.AUTH_ACCESS_SECRET = "test-access-secret-test-access-secret";
-process.env.AUTH_REFRESH_SECRET = "test-refresh-secret-test-refresh-secret";
+const testAccessSecret = Buffer.alloc(48, 11).toString("base64");
+const testRefreshSecret = Buffer.alloc(48, 13).toString("base64");
+const testWebhookSecret = Buffer.alloc(48, 17).toString("base64");
+
+process.env.AUTH_ACCESS_SECRET = testAccessSecret;
+process.env.AUTH_REFRESH_SECRET = testRefreshSecret;
 process.env.CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
-process.env.MERCADOPAGO_WEBHOOK_SECRET = "pulse-test-webhook-secret";
+process.env.MERCADOPAGO_WEBHOOK_SECRET = testWebhookSecret;
 
 const {
   mapMercadoPagoPaymentStatus,
@@ -27,7 +31,7 @@ test("validates Mercado Pago webhook signature manifest", () => {
     ";ts:" + ts +
     ";";
 
-  const v1 = createHmac("sha256", "pulse-test-webhook-secret")
+  const v1 = createHmac("sha256", testWebhookSecret)
     .update(manifest)
     .digest("hex");
 
