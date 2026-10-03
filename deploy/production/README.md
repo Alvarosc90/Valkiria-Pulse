@@ -128,7 +128,9 @@ The API refuses to start in production with public signup + mandatory verificati
 
 ## Mercado Pago subscriptions
 
-PULSE uses server-side Mercado Pago Subscriptions. Configure:
+PULSE uses server-side Mercado Pago Subscriptions. Use a dedicated Mercado Pago application for PULSE even when TrainIA and PULSE settle into the same Mercado Pago account.
+
+Configure:
 
 - MERCADOPAGO_ACCESS_TOKEN
 - MERCADOPAGO_WEBHOOK_SECRET
@@ -137,6 +139,16 @@ PULSE uses server-side Mercado Pago Subscriptions. Configure:
 Webhook URL:
 
 `https://pulse.valkiria.tech/api/v1/webhooks/mercadopago`
+
+For a safer VPS setup, do not paste secrets into shell history or source control. Run:
+
+```bash
+cd deploy/production
+chmod +x configure-mercadopago.sh
+./configure-mercadopago.sh
+```
+
+The script prompts for both Mercado Pago secrets with hidden input, stores them only in the production `.env`, sets production mode and immediately runs the security preflight.
 
 The checkout remains disabled if the Access Token is absent. The API never returns either Mercado Pago secret to the browser.
 
