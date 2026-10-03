@@ -16,6 +16,6 @@
     "test": "npm run test --workspaces --if-present",
     "build:web": "npm run build --workspace @pulse/web",
     "qa": "npm run typecheck && npm test && npm run security:audit && npm run build:web",
-    "security:audit": "npm audit --audit-level=high"
+    "security:audit": "npm prune --workspaces --include-workspace-root && npm audit --audit-level=high"
   }
 }
