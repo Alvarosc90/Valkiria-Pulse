@@ -117,7 +117,18 @@ if (parsed.data.NODE_ENV === "production") {
       "SMTP_HOST and SMTP_FROM are required in production when public signup requires email verification"
     );
   }
-  if (
+  if (parsed.data.MERCADOPAGO_MODE === "production") {
+    if (!parsed.data.MERCADOPAGO_ACCESS_TOKEN) {
+      throw new Error(
+        "MERCADOPAGO_ACCESS_TOKEN is required when MERCADOPAGO_MODE=production"
+      );
+    }
+    if (!parsed.data.MERCADOPAGO_WEBHOOK_SECRET) {
+      throw new Error(
+        "MERCADOPAGO_WEBHOOK_SECRET is required when MERCADOPAGO_MODE=production"
+      );
+    }
+  } else if (
     parsed.data.MERCADOPAGO_ACCESS_TOKEN &&
     !parsed.data.MERCADOPAGO_WEBHOOK_SECRET
   ) {
