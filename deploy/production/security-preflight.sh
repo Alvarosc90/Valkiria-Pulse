@@ -126,9 +126,16 @@ if command -v docker >/dev/null 2>&1; then
     fail "docker compose configuration is invalid"
   fi
 
-  mysql_port="$(docker compose port mysql 3306 2>/dev/null || true)"
-  api_port="$(docker compose port api 4200 2>/dev/null || true)"
-  web_port="$(docker compose port web 80 2>/dev/null || true)"
+  mysql_id="$(docker compose ps -q mysql 2>/dev/null || true)"
+  api_id="$(docker compose ps -q api 2>/dev/null || true)"
+  web_id="$(docker compose ps -q web 2>/dev/null || true)"
+
+  mysql_port=""
+  api_port=""
+  web_port=""
+  [[ -z "$mysql_id" ]] || mysql_port="$(docker port "$mysql_id" 3306/tcp 2>/dev/null || true)"
+  [[ -z "$api_id" ]] || api_port="$(docker port "$api_id" 4200/tcp 2>/dev/null || true)"
+  [[ -z "$web_id" ]] || web_port="$(docker port "$web_id" 80/tcp 2>/dev/null || true)"
 
   [[ -z "$mysql_port" ]] || fail "MySQL must not publish a host port ($mysql_port)"
   [[ -z "$api_port" ]] || fail "API must not publish a host port ($api_port)"
