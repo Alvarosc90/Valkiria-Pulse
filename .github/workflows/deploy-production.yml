@@ -1,0 +1,95 @@
+name: PULSE Production Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pulse-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy PULSE production
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+
+    steps:
+      - name: Validate required deployment secrets
+        env:
+          PULSE_SSH_HOST: ${{ secrets.PULSE_SSH_HOST }}
+          PULSE_SSH_USER: ${{ secrets.PULSE_SSH_USER }}
+          PULSE_SSH_PRIVATE_KEY: ${{ secrets.PULSE_SSH_PRIVATE_KEY }}
+          PULSE_SSH_KNOWN_HOSTS: ${{ secrets.PULSE_SSH_KNOWN_HOSTS }}
+          PULSE_DEPLOY_PATH: ${{ secrets.PULSE_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          for name in PULSE_SSH_HOST PULSE_SSH_USER PULSE_SSH_PRIVATE_KEY PULSE_SSH_KNOWN_HOSTS PULSE_DEPLOY_PATH; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required production secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        env:
+          PULSE_SSH_PRIVATE_KEY: ${{ secrets.PULSE_SSH_PRIVATE_KEY }}
+          PULSE_SSH_KNOWN_HOSTS: ${{ secrets.PULSE_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$PULSE_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$PULSE_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Deploy exact main commit
+        env:
+          PULSE_SSH_HOST: ${{ secrets.PULSE_SSH_HOST }}
+          PULSE_SSH_PORT: ${{ secrets.PULSE_SSH_PORT }}
+          PULSE_SSH_USER: ${{ secrets.PULSE_SSH_USER }}
+          PULSE_DEPLOY_PATH: ${{ secrets.PULSE_DEPLOY_PATH }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          PORT="${PULSE_SSH_PORT:-22}"
+          ssh -i "$HOME/.ssh/id_ed25519" -p "$PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$PULSE_SSH_USER@$PULSE_SSH_HOST" \
+            "bash -s -- '$DEPLOY_SHA' '$PULSE_DEPLOY_PATH'" <<'REMOTE'
+          set -euo pipefail
+          DEPLOY_SHA="$1"
+          APP_DIR="$2"
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            echo "[deploy] Repository not bootstrapped at $APP_DIR" >&2
+            exit 1
+          fi
+
+          cd "$APP_DIR"
+          git fetch --prune origin main
+          git checkout main
+          git reset --hard "$DEPLOY_SHA"
+
+          cd deploy/production
+
+          if [ ! -f .env ]; then
+            echo "[deploy] Missing production .env. Run bootstrap-env.sh on the VPS and configure provider secrets first." >&2
+            exit 1
+          fi
+
+          chmod 600 .env
+          ./security-preflight.sh .env
+          ./deploy.sh
+          ./security-preflight.sh .env
+
+          docker compose ps
+          curl -fsS http://127.0.0.1:"${PULSE_HTTP_PORT:-8081}"/health
+          REMOTE
+
+      - name: Record deployed revision
+        run: echo "Deployed PULSE revision ${GITHUB_SHA}"
