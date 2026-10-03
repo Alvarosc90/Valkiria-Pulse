@@ -273,6 +273,23 @@ export function mapMercadoPagoSubscriptionStatus(status: string | null | undefin
 }
 
 
+export function mapMercadoPagoPaymentStatus(status: string | null | undefined) {
+  const normalized = String(status ?? "").trim().toLowerCase();
+
+  if (normalized === "approved") return "approved" as const;
+  if (["pending", "in_process", "authorized"].includes(normalized)) {
+    return "pending" as const;
+  }
+  if (
+    ["rejected", "cancelled", "canceled", "cancelled_by_collector", "refunded", "charged_back"]
+      .includes(normalized)
+  ) {
+    return "failed" as const;
+  }
+
+  return "unknown" as const;
+}
+
 export async function getMercadoPagoPayment(paymentId: string) {
   return mpFetch<any>(
     "/v1/payments/" + encodeURIComponent(paymentId)
