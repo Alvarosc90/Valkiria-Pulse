@@ -1,57 +1,7 @@
 import type { RowDataPacket } from "mysql2";
 import { config } from "../config.js";
 import { db } from "../db.js";
-
-type Rule = {
-  path: string;
-  op?: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in" | "exists";
-  value?: unknown;
-};
-
-function objectValue(input: unknown): Record<string, unknown> {
-  if (!input) return {};
-  if (typeof input === "object") return input as Record<string, unknown>;
-  if (typeof input === "string") {
-    try {
-      const parsed = JSON.parse(input);
-      return parsed && typeof parsed === "object"
-        ? parsed as Record<string, unknown>
-        : {};
-    } catch {
-      return {};
-    }
-  }
-  return {};
-}
-
-function getPath(input: Record<string, unknown>, path: string) {
-  return path.split(".").reduce<unknown>((current, key) => {
-    if (!current || typeof current !== "object") return undefined;
-    return (current as Record<string, unknown>)[key];
-  }, input);
-}
-
-function matchesRule(payload: Record<string, unknown>, rule: Rule) {
-  const actual = getPath(payload, rule.path);
-  const op = rule.op ?? "eq";
-  if (op === "exists") return actual !== undefined && actual !== null;
-  if (op === "eq") return actual === rule.value;
-  if (op === "neq") return actual !== rule.value;
-  if (op === "in") return Array.isArray(rule.value) && rule.value.includes(actual);
-  if (typeof actual !== "number" || typeof rule.value !== "number") return false;
-  if (op === "gt") return actual > rule.value;
-  if (op === "gte") return actual >= rule.value;
-  if (op === "lt") return actual < rule.value;
-  if (op === "lte") return actual <= rule.value;
-  return false;
-}
-
-function matchesConditions(payload: Record<string, unknown>, raw: unknown) {
-  const conditions = objectValue(raw);
-  const rules = Array.isArray(conditions.all) ? conditions.all as Rule[] : [];
-  if (!rules.length) return true;
-  return rules.every((rule) =>
-    rule &&
+i  rule &&
     typeof rule.path === "string" &&
     matchesRule(payload, rule)
   );
@@ -89,7 +39,7 @@ export async function processPendingGrowthSignals(limit = 50) {
   for (const signal of signals) {
     const tenantId = Number(signal.tenantId);
     const signalId = Number(signal.id);
-    const payload = objectValue(signal.payload);
+    const payload = growthObjectValue(signal.payload);
 
     const [triggers] = await db.query<RowDataPacket[]>(
       `SELECT gt.id, gt.campaign_id AS campaignId,
@@ -110,7 +60,7 @@ export async function processPendingGrowthSignals(limit = 50) {
     );
 
     const matched = triggers.filter((trigger) =>
-      matchesConditions(payload, trigger.conditionsJson)
+      growthConditionsMatch(payload, trigger.conditionsJson)
     );
 
     if (!matched.length) {
@@ -200,7 +150,7 @@ export async function processPendingGrowthSignals(limit = 50) {
                 sourceSignalId: signalId,
                 sourceEventType: signal.eventType,
                 actionType: step.actionType,
-                template: objectValue(step.template),
+                template: growthObjectValue(step.template),
                 context: payload
               }),
               scheduledAt
