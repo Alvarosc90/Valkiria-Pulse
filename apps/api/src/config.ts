@@ -65,6 +65,7 @@ const schema = z.object({
   MERCADOPAGO_MODE: z.enum(["test", "production", "unknown"]).default("unknown"),
   MERCADOPAGO_API_BASE: z.string().url().default("https://api.mercadopago.com"),
 
+  PULSE_LLM_PROVIDER: z.enum(["openai", "compatible"]).default("compatible"),
   PULSE_LLM_BASE_URL: z.preprocess(
     emptyToUndefined,
     z.string().url().optional()
@@ -72,6 +73,11 @@ const schema = z.object({
   PULSE_LLM_API_KEY: optionalString,
   PULSE_LLM_MODEL: optionalString,
   PULSE_LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
+  PULSE_LLM_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(8),
+  PULSE_LLM_MAX_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
+  PULSE_LLM_INPUT_USD_PER_MILLION: z.coerce.number().min(0).default(0),
+  PULSE_LLM_CACHED_INPUT_USD_PER_MILLION: z.coerce.number().min(0).default(0),
+  PULSE_LLM_OUTPUT_USD_PER_MILLION: z.coerce.number().min(0).default(0),
 
   PULSE_MEDIA_DIR: z.string().min(1).default("./data/media"),
   PULSE_MEDIA_PUBLIC_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
@@ -117,6 +123,17 @@ if (parsed.data.NODE_ENV === "production") {
       "SMTP_HOST and SMTP_FROM are required in production when public signup requires email verification"
     );
   }
+  if (
+    parsed.data.PULSE_LLM_PROVIDER === "openai" &&
+    parsed.data.PULSE_LLM_BASE_URL &&
+    parsed.data.PULSE_LLM_MODEL &&
+    !parsed.data.PULSE_LLM_API_KEY
+  ) {
+    throw new Error(
+      "PULSE_LLM_API_KEY is required in production when OpenAI is enabled"
+    );
+  }
+
   if (parsed.data.MERCADOPAGO_MODE === "production") {
     if (!parsed.data.MERCADOPAGO_ACCESS_TOKEN) {
       throw new Error(
