@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { config } from "../config.js";
 import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
 import { getTenantSubscription } from "./subscription.js";
@@ -112,7 +113,19 @@ export async function getVideoCreditCatalog(currency = "ARS") {
     ).then(([rows]) => rows)
   ]);
 
+  const anyGenerationEnabled = models.some((row) => Boolean(row.generation_enabled));
+  const commerceEnabled =
+    config.PULSE_VIDEO_COMMERCE_ENABLED &&
+    Boolean(config.FAL_API_KEY) &&
+    anyGenerationEnabled;
+
   return {
+    commerceEnabled,
+    provider: {
+      key: config.PULSE_VIDEO_PROVIDER,
+      configured: Boolean(config.FAL_API_KEY),
+      generationEnabled: anyGenerationEnabled
+    },
     creditDefinition: {
       creditsPerProviderUsd: 100,
       providerBudgetPerCreditUsd: 0.01,
