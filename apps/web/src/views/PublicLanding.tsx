@@ -30,11 +30,11 @@ const agents = [
 ];
 
 const featureStrip = [
-  ["agents", "3 agentes especializados", "uno por plataforma"],
-  ["context", "Contexto separado", "sin mezclar memorias"],
-  ["calendar", "Calendarios flexibles", "creá o importá Excel"],
-  ["publish", "De idea a publicación", "en un solo flujo"],
-  ["assistant", "PULSE IA", "te acompaña desde la landing"]
+  ["agents", "Contenido especializado", "Instagram, TikTok y LinkedIn"],
+  ["context", "Datos del negocio", "audiencias y contexto real"],
+  ["calendar", "WhatsApp + seguimiento", "reactivación y retención"],
+  ["publish", "Campañas de Growth", "sin depender de Ads"],
+  ["assistant", "Paid Media opcional", "Meta Ads y Google Ads aparte"]
 ];
 
 const networkContext = [
@@ -56,42 +56,42 @@ const networkContext = [
 ];
 
 const flow = [
-  ["01", "Idear", "El objetivo de campaña entra una sola vez."],
-  ["02", "Crear", "Cada agente produce para su propia red."],
-  ["03", "Aprobar", "Revisás contenido y assets en un mismo lugar."],
-  ["04", "Programar", "PULSE organiza cada calendario editorial."],
-  ["05", "Publicar", "Los providers ejecutan y registran el resultado."]
+  ["01", "Detectar", "PULSE recibe señales y datos del negocio."],
+  ["02", "Segmentar", "Construye audiencias según comportamiento e intención."],
+  ["03", "Activar", "Usa contenido, WhatsApp, promociones o seguimiento."],
+  ["04", "Convertir", "Cada campaña persigue una acción medible."],
+  ["05", "Aprender", "Los resultados retroalimentan la siguiente acción."]
 ];
 
 const plans = [
   {
     name: "Inicial",
     badge: "Prueba 14 días",
-    copy: "Para una marca que quiere ordenar calendario, agentes y conexiones.",
+    copy: "Para una marca que quiere ordenar contenido y empezar a activar campañas propias.",
     ars: "ARS 24.900",
     usd: "USD 19",
     annual: "Anual: ARS 249.000 · USD 190",
-    items: ["1 marca", "Hasta 3 cuentas sociales", "60 publicaciones / mes", "150 generaciones IA / mes", "Video premium disponible con créditos prepagos"],
+    items: ["1 marca", "Hasta 3 cuentas sociales", "60 publicaciones / mes", "150 generaciones IA / mes", "Growth básico y campañas propias", "Video premium disponible con créditos prepagos"],
     cta: "Empezar 14 días"
   },
   {
     name: "Profesional",
     badge: "Más volumen",
-    copy: "Para equipos que necesitan colaboración, memoria editorial y biblioteca.",
+    copy: "Para equipos que suman WhatsApp, audiencias, seguimiento y retención a su operación.",
     ars: "ARS 59.900",
     usd: "USD 49",
     annual: "Anual: ARS 599.000 · USD 490",
-    items: ["Hasta 3 marcas", "Hasta 9 cuentas sociales", "250 publicaciones / mes", "800 generaciones IA / mes", "Video premium con packs prepagos + Analytics"],
+    items: ["Hasta 3 marcas", "Hasta 9 cuentas sociales", "250 publicaciones / mes", "800 generaciones IA / mes", "Growth & Retention", "WhatsApp y segmentación", "Video premium con packs prepagos + Analytics"],
     cta: "Crear cuenta"
   },
   {
     name: "Business",
     badge: "Equipos",
-    copy: "Para operaciones multi-marca con más capacidad y aprobaciones.",
+    copy: "Para operaciones multi-marca con automatización, retención y capacidad comercial más avanzada.",
     ars: "ARS 119.900",
     usd: "USD 99",
     annual: "Anual: ARS 1.199.000 · USD 990",
-    items: ["Hasta 10 marcas", "Hasta 30 cuentas sociales", "1.200 publicaciones / mes", "5.000 generaciones IA / mes", "Video premium con packs prepagos + prioridad"],
+    items: ["Hasta 10 marcas", "Hasta 30 cuentas sociales", "1.200 publicaciones / mes", "5.000 generaciones IA / mes", "Growth avanzado + automatizaciones", "Paid Media disponible como integración opcional", "Video premium con packs prepagos + prioridad"],
     cta: "Crear cuenta"
   }
 ];
@@ -166,14 +166,15 @@ function DashboardPreview() {
         <div className="preview-topbar">
           <div className="preview-brand-dot" />
           <strong>PULSE Command Center</strong>
-          <span>3 agentes activos</span>
+          <span>Growth engine activo</span>
         </div>
 
         <div className="preview-body">
           <aside className="preview-sidebar">
             <span className="preview-nav active">Resumen</span>
-            <span className="preview-nav">Calendarios</span>
-            <span className="preview-nav">Agentes</span>
+            <span className="preview-nav">Contenido</span>
+            <span className="preview-nav">Growth</span>
+            <span className="preview-nav">WhatsApp</span>
             <span className="preview-nav">Analytics</span>
           </aside>
 
@@ -195,7 +196,7 @@ function DashboardPreview() {
             <div className="preview-grid">
               <div className="preview-calendar">
                 <div className="preview-panel-title">
-                  <strong>Calendario de publicaciones</strong>
+                  <strong>Activaciones y campañas</strong>
                   <span>Octubre</span>
                 </div>
                 <div className="calendar-days">
@@ -208,12 +209,12 @@ function DashboardPreview() {
                 </div>
                 <div className="preview-schedule-line">
                   <span className="schedule-dot ig" />
-                  <strong>Producto en acción</strong>
+                  <strong>Reactivación de clientes</strong>
                   <small>10:30</small>
                 </div>
                 <div className="preview-schedule-line">
                   <span className="schedule-dot tt" />
-                  <strong>Hook de comunidad</strong>
+                  <strong>Seguimiento por WhatsApp</strong>
                   <small>14:00</small>
                 </div>
               </div>
@@ -233,9 +234,9 @@ function DashboardPreview() {
             </div>
 
             <div className="preview-metrics">
-              <div><span>Impresiones</span><strong>125K</strong><small>+32%</small></div>
-              <div><span>Engagement</span><strong>8.7K</strong><small>+28%</small></div>
-              <div><span>Seguidores</span><strong>3.2K</strong><small>+41%</small></div>
+              <div><span>Audiencias</span><strong>12</strong><small>activas</small></div>
+              <div><span>Conversión</span><strong>18%</strong><small>+4%</small></div>
+              <div><span>Retención</span><strong>91%</strong><small>+6%</small></div>
             </div>
           </div>
         </div>
@@ -244,8 +245,8 @@ function DashboardPreview() {
       <div className="landing-result-card">
         <span>↗</span>
         <div>
-          <strong>Contenido que conecta.</strong>
-          <small>Resultados que se pueden leer.</small>
+          <strong>Datos que activan acciones.</strong>
+          <small>Contenido, WhatsApp y retención.</small>
         </div>
       </div>
     </div>
@@ -270,6 +271,7 @@ export function PublicLanding({
 
         <nav className="landing-nav" aria-label="Navegación principal">
           <a href="#producto">Producto</a>
+          <a href="#growth">Growth</a>
           <a href="#agentes">Agentes IA</a>
           <a href="#contexto">Diferencia</a>
           <a href="#planes">Planes</a>
@@ -285,17 +287,17 @@ export function PublicLanding({
       <main>
         <section className="landing-hero" id="producto">
           <div className="landing-hero-copy">
-            <span className="landing-pill">✦ Plataforma de contenido con IA</span>
+            <span className="landing-pill">✦ Growth, comunicación y retención con IA</span>
             <h1>Cada red.<br /><span>Su propio pulso.</span></h1>
             <p>
-              Gestioná Instagram, TikTok y LinkedIn con agentes de IA especializados.
-              Planificá, creá, aprobá y publicá contenido pensado para cada plataforma,
-              con su propio contexto.
+              PULSE convierte los datos de tu negocio en acciones. Coordiná contenido,
+              WhatsApp, campañas, seguimiento y retención con agentes especializados,
+              sin mezclar la lógica de cada canal.
             </p>
 
             <div className="landing-hero-actions">
               <button className="landing-primary" onClick={onSignup}>Comenzar gratis →</button>
-              <a className="landing-secondary" href="#agentes">Ver cómo funciona</a>
+              <a className="landing-secondary" href="#growth">Ver cómo funciona</a>
             </div>
 
             <div className="landing-trust-row">
@@ -317,10 +319,72 @@ export function PublicLanding({
           ))}
         </section>
 
+
+        <section className="landing-section" id="growth">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">Más que contenido</span>
+            <h2>Growth, comunicación y retención en una sola plataforma.</h2>
+            <p>
+              PULSE no necesita que pagues publicidad para ejecutar campañas. Puede activar
+              audiencias usando canales propios, datos del negocio y seguimiento automatizado.
+            </p>
+          </div>
+
+          <div className="landing-growth-grid">
+            <article className="landing-growth-card primary">
+              <span>Contenido</span>
+              <h3>Instagram, TikTok y LinkedIn</h3>
+              <p>
+                Cada red conserva su agente, su lenguaje y su memoria editorial. PULSE coordina
+                planificación, generación, aprobación y publicación.
+              </p>
+            </article>
+            <article className="landing-growth-card retention">
+              <span>Growth & Retention</span>
+              <h3>WhatsApp, audiencias y seguimiento</h3>
+              <p>
+                Reactivación, promociones, recuperación de clientes, cross-sell, upsell y
+                secuencias de seguimiento a partir de señales reales del negocio.
+              </p>
+            </article>
+            <article className="landing-growth-card optional">
+              <span>Paid Media opcional</span>
+              <h3>Meta Ads + Google Ads</h3>
+              <p>
+                PULSE puede preparar campañas pagas, pero la inversión publicitaria la paga
+                el cliente directamente y no forma parte de la suscripción base.
+              </p>
+            </article>
+          </div>
+
+          <div className="landing-business-flow" aria-label="Flujo de PULSE">
+            <span>Tu negocio</span><b>→</b><span>PULSE</span><b>→</b><span>Audiencias + contexto</span><b>→</b>
+            <span>Agentes</span><b>→</b><span>Redes + WhatsApp</span><b>→</b><span>Conversión + retención</span>
+          </div>
+        </section>
+
+        <section className="landing-section">
+          <div className="landing-section-heading">
+            <span className="landing-pill soft">Campañas sin publicidad paga</span>
+            <h2>Marketing sobre canales propios.</h2>
+            <p>
+              Una campaña puede empezar con una audiencia y terminar en una venta, renovación
+              o recuperación sin usar Meta Ads ni Google Ads.
+            </p>
+          </div>
+
+          <div className="landing-usecase-grid">
+            <article className="landing-usecase-card"><b>01</b><h3>Reactivación</h3><p>Detectá clientes inactivos y dispará una secuencia personalizada de recuperación.</p></article>
+            <article className="landing-usecase-card"><b>02</b><h3>Retención</h3><p>Actuá ante vencimientos, caída de actividad o señales de abandono antes del churn.</p></article>
+            <article className="landing-usecase-card"><b>03</b><h3>Promociones</h3><p>Segmentá por comportamiento y enviá ofertas relevantes en vez de mensajes masivos.</p></article>
+            <article className="landing-usecase-card"><b>04</b><h3>Cross-sell</h3><p>Usá compras y contexto para proponer el siguiente servicio o producto adecuado.</p></article>
+          </div>
+        </section>
+
         <section className="landing-section landing-agents-section" id="agentes">
           <div className="landing-section-heading centered">
-            <span className="landing-pill soft">3 agentes · 3 especialistas · 1 plataforma</span>
-            <h2>Agentes de IA especializados<br />en cada red social.</h2>
+            <span className="landing-pill soft">Especialización por canal</span>
+            <h2>Agentes de IA especializados<br />sin mezclar contextos.</h2>
             <p>
               Cada plataforma tiene su propio lenguaje, audiencia y oportunidades.
               PULSE mantiene la identidad de tu marca, pero deja que cada agente piense
@@ -398,8 +462,8 @@ export function PublicLanding({
             <span className="landing-pill soft">Medí lo que importa</span>
             <h2>Visibilidad total del rendimiento.</h2>
             <p>
-              Cuando cada red habilita los permisos de métricas, PULSE reúne el rendimiento
-              por plataforma y lo convierte en señales editoriales para el agente correcto.
+              PULSE combina métricas de contenido con señales de campaña y conversión para
+              entender no sólo qué genera atención, sino qué mueve clientes y retención.
             </p>
           </div>
 
@@ -408,6 +472,39 @@ export function PublicLanding({
             <article><span>♡</span><small>Engagement</small><strong>8.7K</strong><b>+28%</b></article>
             <article><span>♙</span><small>Nuevos seguidores</small><strong>3.2K</strong><b>+41%</b></article>
             <article><span>↗</span><small>Mejor contenido</small><strong>Reels</strong><b>+56%</b></article>
+          </div>
+        </section>
+
+
+        <section className="landing-section">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">Paid Media separado</span>
+            <h2>La publicidad paga es opcional.</h2>
+            <p>
+              El plan base de PULSE no incluye presupuesto de anuncios. El cliente mantiene
+              el control de su cuenta publicitaria y paga directamente a Meta o Google.
+            </p>
+          </div>
+          <div className="landing-paid-layout">
+            <article className="landing-paid-card">
+              <span>PULSE prepara</span>
+              <h3>Campañas listas para ejecutar</h3>
+              <ul>
+                <li>Objetivo y audiencia</li>
+                <li>Copy y creatividad</li>
+                <li>Variantes A/B</li>
+                <li>Presupuesto sugerido y duración</li>
+                <li>CTA, landing, UTM y seguimiento</li>
+              </ul>
+            </article>
+            <article className="landing-paid-card optional">
+              <span>Integración opcional</span>
+              <h3>Meta Ads / Google Ads</h3>
+              <p>
+                En una primera etapa PULSE puede dejar la campaña preparada para publicación manual.
+                Más adelante, las APIs oficiales podrán habilitar publicación y gestión desde la plataforma.
+              </p>
+            </article>
           </div>
         </section>
 
@@ -463,7 +560,7 @@ export function PublicLanding({
         <section className="landing-section landing-flow" id="flujo">
           <div className="landing-section-heading centered">
             <span className="landing-pill soft">Un flujo simple, poderoso</span>
-            <h2>De la idea a la publicación.<br />Sin complicaciones.</h2>
+            <h2>Del dato a la acción.<br />Y de la acción al resultado.</h2>
           </div>
 
           <div className="landing-flow-line">
@@ -483,8 +580,9 @@ export function PublicLanding({
             <span className="landing-pill soft">Empezá simple y escalá</span>
             <h2>Planes pensados para crecer con tu operación.</h2>
             <p>
-              Elegí el plan por marcas, volumen y colaboración. La IA de texto está incluida
-              según el límite del plan; el video premium se compra por créditos prepagos cuando lo necesitás.
+              Elegí el plan por marcas, volumen, canales y nivel de Growth. La publicidad paga
+              no está incluida: Meta Ads y Google Ads funcionan como integraciones opcionales y
+              el presupuesto se paga directamente al proveedor.
             </p>
           </div>
 
@@ -512,7 +610,7 @@ export function PublicLanding({
           </div>
           <p className="landing-enterprise-note">
             ¿Más de 10 marcas o necesitás límites especiales? Enterprise se cotiza a medida.
-            Los Video Credits son un consumo adicional y no forman parte de la cuota mensual.
+            Los Video Credits y el presupuesto de Paid Media son consumos adicionales y no forman parte de la cuota mensual.
           </p>
         </section>
 
@@ -522,12 +620,12 @@ export function PublicLanding({
             <h2>¿Querés ver PULSE aplicado a tu marca?</h2>
             <p>
               Contanos cómo trabajás hoy. La consulta queda registrada para que podamos
-              revisar tu caso, cantidad de marcas, redes y flujo editorial.
+              revisar tu caso, cantidad de marcas, fuentes de datos, redes, WhatsApp y objetivos de crecimiento.
             </p>
             <div className="landing-contact-points">
               <span><FeatureIcon name="agents" /> Revisión de tu flujo actual</span>
-              <span><FeatureIcon name="calendar" /> Migración desde Excel</span>
-              <span><FeatureIcon name="assistant" /> Configuración de agentes</span>
+              <span><FeatureIcon name="calendar" /> Diseño de campañas y audiencias</span>
+              <span><FeatureIcon name="assistant" /> Configuración de agentes y canales</span>
             </div>
           </div>
           <PublicContactForm />
@@ -536,8 +634,8 @@ export function PublicLanding({
         <section className="landing-cta">
           <div>
             <span className="landing-pill inverted">Valkiria PULSE</span>
-            <h2>Llevá tu contenido al siguiente nivel.</h2>
-            <p>Una marca. Tres lenguajes. Un solo command center.</p>
+            <h2>Convertí tus datos en crecimiento.</h2>
+            <p>Contenido, WhatsApp, campañas y retención. Un solo motor de Growth.</p>
           </div>
           <button className="landing-cta-button" onClick={onSignup}>Comenzar gratis →</button>
         </section>
