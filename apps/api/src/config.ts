@@ -79,6 +79,11 @@ const schema = z.object({
   PULSE_LLM_CACHED_INPUT_USD_PER_MILLION: z.coerce.number().min(0).default(0),
   PULSE_LLM_OUTPUT_USD_PER_MILLION: z.coerce.number().min(0).default(0),
 
+  PULSE_VIDEO_COMMERCE_ENABLED: booleanFromEnv(false),
+  PULSE_VIDEO_PROVIDER: z.enum(["fal"]).default("fal"),
+  FAL_API_KEY: optionalString,
+  PULSE_VIDEO_PROVIDER_BUFFER_USD: z.coerce.number().min(0).max(100000).default(25),
+
   PULSE_MEDIA_DIR: z.string().min(1).default("./data/media"),
   PULSE_MEDIA_PUBLIC_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
   PULSE_MEDIA_MAX_MB: z.coerce.number().int().min(1).max(1024).default(100),
@@ -131,6 +136,12 @@ if (parsed.data.NODE_ENV === "production") {
   ) {
     throw new Error(
       "PULSE_LLM_API_KEY is required in production when OpenAI is enabled"
+    );
+  }
+
+  if (parsed.data.PULSE_VIDEO_COMMERCE_ENABLED && !parsed.data.FAL_API_KEY) {
+    throw new Error(
+      "FAL_API_KEY is required in production when Video Credits commerce is enabled"
     );
   }
 
