@@ -19,7 +19,7 @@
     "db:infra:bootstrap": "tsx scripts/db-infra-bootstrap.ts",
     "db:seed:dev": "tsx scripts/seed-dev.ts",
     "social:upsert": "tsx scripts/upsert-social-account.ts",
-    "test": "node --import tsx --test src/billing/mercadoPago.test.ts",
+    "test": "node --import tsx --test src/billing/mercadoPago.test.ts src/services/growthRuleEngine.test.ts",
     "owner:bootstrap": "tsx scripts/bootstrap-owner.ts",
     "ai:usage": "tsx scripts/ai-usage-report.ts",
     "video:commerce": "tsx scripts/video-commerce-report.ts"
