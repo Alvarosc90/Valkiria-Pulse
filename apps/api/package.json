@@ -21,7 +21,8 @@
     "social:upsert": "tsx scripts/upsert-social-account.ts",
     "test": "node --import tsx --test src/billing/mercadoPago.test.ts",
     "owner:bootstrap": "tsx scripts/bootstrap-owner.ts",
-    "ai:usage": "tsx scripts/ai-usage-report.ts"
+    "ai:usage": "tsx scripts/ai-usage-report.ts",
+    "video:commerce": "tsx scripts/video-commerce-report.ts"
   },
   "dependencies": {
     "@pulse/agents": "*",
