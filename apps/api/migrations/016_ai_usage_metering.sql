@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS ai_usage_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tenant_id BIGINT UNSIGNED NOT NULL,
+  brand_id BIGINT UNSIGNED NULL,
+  platform VARCHAR(32) NOT NULL,
+  entry_id VARCHAR(190) NULL,
+  provider VARCHAR(64) NOT NULL,
+  model VARCHAR(120) NOT NULL,
+  provider_request_id VARCHAR(190) NULL,
+  input_tokens INT UNSIGNED NOT NULL DEFAULT 0,
+  cached_input_tokens INT UNSIGNED NOT NULL DEFAULT 0,
+  output_tokens INT UNSIGNED NOT NULL DEFAULT 0,
+  total_tokens INT UNSIGNED NOT NULL DEFAULT 0,
+  estimated_cost_usd DECIMAL(14,8) NOT NULL DEFAULT 0,
+  status ENUM('success','failed') NOT NULL,
+  error_code VARCHAR(120) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_ai_usage_tenant_created (tenant_id, created_at),
+  KEY idx_ai_usage_provider_model_created (provider, model, created_at),
+  KEY idx_ai_usage_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
