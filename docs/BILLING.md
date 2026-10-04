@@ -80,3 +80,26 @@ Secrets are server-only. The UI exposes only configured/not-configured state.
 - test monthly and yearly amounts
 - make one low-value production purchase end-to-end
 - verify cancellation/refund/tax terms with the commercial/legal setup
+
+
+## Premium video add-on
+
+Premium video is deliberately separated from the recurring SaaS plan.
+
+- Text AI remains included up to each plan's `aiGenerationsPerMonth` limit.
+- Video is prepaid through tenant Video Credits.
+- No plan includes unlimited video.
+- Video pack payments are one-time Mercado Pago purchases, not recurring subscriptions.
+- Failed video-pack payments do not affect SaaS subscription state.
+- Credits are reserved before generation and released if provider generation fails.
+
+Launch packs:
+- Video Start: 500 credits — ARS 19,900 / USD 14.90
+- Video Creator: 1,500 credits — ARS 52,900 / USD 39.90
+- Video Studio: 4,000 credits — ARS 129,900 / USD 99
+
+The internal cost mapping is 100 Video Credits per USD 1 of provider budget. Provider cost and commercial margin are never exposed through the customer API.
+
+Video commerce is fail-closed. `PULSE_VIDEO_COMMERCE_ENABLED=true` is valid only after fal credentials and at least one production-tested video model are enabled.
+
+See `docs/VIDEO_CREDITS.md` for wallet, reservation, provider-funding and margin policy.
