@@ -172,10 +172,20 @@ export async function rotateBusinessConnectorSecret(input: {
     [input.connectorId, input.tenantId]
   );
 
+  const row = rows[0];
+  if (!row) {
+    throw new HttpError("Conector no encontrado", 404, "CONNECTOR_NOT_FOUND");
+  }
+
   return {
-    ...rows[0],
+    publicId: String(row.publicId),
+    connectorKey: String(row.connectorKey),
+    providerKey: String(row.providerKey),
+    issuer: String(row.issuer),
+    audience: String(row.audience),
+    secretVersion: Number(row.secretVersion),
     secret,
-    endpointPath: `/api/v1/integrations/connectors/${rows[0]!.publicId}/events`,
+    endpointPath: `/api/v1/integrations/connectors/${String(row.publicId)}/events`,
     warning: "El secreto anterior dejó de ser válido."
   };
 }
