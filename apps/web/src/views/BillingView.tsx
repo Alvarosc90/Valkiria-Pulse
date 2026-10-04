@@ -81,6 +81,12 @@ type VideoWallet = {
 };
 
 type VideoCreditCatalog = {
+  commerceEnabled: boolean;
+  provider?: {
+    key: string;
+    configured: boolean;
+    generationEnabled: boolean;
+  };
   packs: VideoCreditPack[];
   models: VideoModel[];
 };
@@ -128,7 +134,11 @@ export function BillingView({
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [testingProvider, setTestingProvider] = useState(false);
   const [providerAccount, setProviderAccount] = useState<ProviderAccount | null>(null);
-  const [videoCatalog, setVideoCatalog] = useState<VideoCreditCatalog>({ packs: [], models: [] });
+  const [videoCatalog, setVideoCatalog] = useState<VideoCreditCatalog>({
+    commerceEnabled: false,
+    packs: [],
+    models: []
+  });
   const [videoWallet, setVideoWallet] = useState<VideoWallet>({
     availableCredits: 0,
     reservedCredits: 0,
@@ -160,7 +170,11 @@ export function BillingView({
       setSubscription(current.data.subscription ?? null);
       setUsage(current.data.usage ?? {});
       setProvider(providerStatus.data);
-      setVideoCatalog(video.data ?? { packs: [], models: [] });
+      setVideoCatalog(video.data ?? {
+        commerceEnabled: false,
+        packs: [],
+        models: []
+      });
       setVideoWallet(wallet.data ?? {
         availableCredits: 0,
         reservedCredits: 0,
@@ -688,6 +702,7 @@ export function BillingView({
                   !canManage ||
                   busyVideoPack != null ||
                   !provider?.configured ||
+                  !videoCatalog.commerceEnabled ||
                   !pack.price
                 }
                 onClick={() => void startVideoCreditCheckout(pack)}
@@ -706,6 +721,12 @@ export function BillingView({
             PULSE cotiza antes de generar, reserva los créditos y sólo los consume
             cuando el proveedor completa el video. Si la generación falla, la reserva se libera.
           </span>
+          {!videoCatalog.commerceEnabled && (
+            <span className="video-commerce-pending">
+              Compra temporalmente deshabilitada hasta completar la conexión productiva
+              con el proveedor de video. PULSE no vende créditos que todavía no puede ejecutar.
+            </span>
+          )}
         </div>
       </section>
 
