@@ -122,7 +122,7 @@ async function main() {
     }
 
     const [subscriptionRows] = await connection.query<RowDataPacket[]>(
-      "SELECT id FROM tenant_subscriptions WHERE tenant_id = ? LIMIT 1",
+      "SELECT tenant_id FROM tenant_subscriptions WHERE tenant_id = ? LIMIT 1",
       [tenantId]
     );
     if (!subscriptionRows[0]) {
