@@ -1,0 +1,101 @@
+CREATE TABLE marketing_audiences (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tenant_id BIGINT UNSIGNED NOT NULL,
+  brand_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  description VARCHAR(800) NULL,
+  source ENUM('manual','trainia','valkiria_one','external') NOT NULL DEFAULT 'manual',
+  status ENUM('draft','ready','archived') NOT NULL DEFAULT 'draft',
+  rules_json JSON NULL,
+  estimated_size INT UNSIGNED NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_marketing_audiences_tenant_brand (tenant_id, brand_id, status),
+  CONSTRAINT fk_marketing_audiences_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_marketing_audiences_brand FOREIGN KEY (brand_id) REFERENCES brands(id),
+  CONSTRAINT fk_marketing_audiences_created_by FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketing_campaigns (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tenant_id BIGINT UNSIGNED NOT NULL,
+  brand_id BIGINT UNSIGNED NOT NULL,
+  audience_id BIGINT UNSIGNED NULL,
+  name VARCHAR(180) NOT NULL,
+  objective VARCHAR(500) NOT NULL,
+  campaign_type ENUM(
+    'content',
+    'promotion',
+    'reactivation',
+    'retention',
+    'launch',
+    'cross_sell',
+    'up_sell',
+    'paid_media_draft'
+  ) NOT NULL DEFAULT 'content',
+  status ENUM('draft','ready','active','paused','completed','archived') NOT NULL DEFAULT 'draft',
+  primary_channel ENUM(
+    'multichannel',
+    'whatsapp',
+    'instagram',
+    'tiktok',
+    'linkedin',
+    'paid_media'
+  ) NOT NULL DEFAULT 'multichannel',
+  paid_media_mode ENUM('none','draft_only','connected') NOT NULL DEFAULT 'none',
+  paid_media_platform ENUM('meta','google','both') NULL,
+  recommended_budget_minor BIGINT UNSIGNED NULL,
+  budget_currency CHAR(3) NULL,
+  offer_json JSON NULL,
+  metadata_json JSON NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_marketing_campaigns_tenant_brand (tenant_id, brand_id, status),
+  KEY idx_marketing_campaigns_audience (audience_id),
+  CONSTRAINT fk_marketing_campaigns_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_marketing_campaigns_brand FOREIGN KEY (brand_id) REFERENCES brands(id),
+  CONSTRAINT fk_marketing_campaigns_audience FOREIGN KEY (audience_id) REFERENCES marketing_audiences(id) ON DELETE SET NULL,
+  CONSTRAINT fk_marketing_campaigns_created_by FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketing_campaign_steps (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tenant_id BIGINT UNSIGNED NOT NULL,
+  campaign_id BIGINT UNSIGNED NOT NULL,
+  step_order SMALLINT UNSIGNED NOT NULL,
+  delay_hours INT UNSIGNED NOT NULL DEFAULT 0,
+  channel ENUM('whatsapp','instagram','tiktok','linkedin','paid_media') NOT NULL,
+  step_type ENUM('message','content','reminder','offer','follow_up','ad_draft') NOT NULL,
+  status ENUM('draft','ready','executed','skipped','failed') NOT NULL DEFAULT 'draft',
+  payload_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_marketing_campaign_step_order (campaign_id, step_order),
+  KEY idx_marketing_campaign_steps_tenant (tenant_id, campaign_id),
+  CONSTRAINT fk_marketing_campaign_steps_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_marketing_campaign_steps_campaign FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE growth_channel_connections (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tenant_id BIGINT UNSIGNED NOT NULL,
+  brand_id BIGINT UNSIGNED NOT NULL,
+  channel ENUM('whatsapp','meta_ads','google_ads') NOT NULL,
+  provider VARCHAR(80) NULL,
+  status ENUM('not_connected','connected','disabled') NOT NULL DEFAULT 'not_connected',
+  external_account_ref VARCHAR(180) NULL,
+  settings_json JSON NULL,
+  connected_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_growth_channel_connection (tenant_id, brand_id, channel),
+  KEY idx_growth_channel_connections_brand (tenant_id, brand_id),
+  CONSTRAINT fk_growth_channel_connections_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_growth_channel_connections_brand FOREIGN KEY (brand_id) REFERENCES brands(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
