@@ -8,6 +8,7 @@ import "./analytics.css";
 import "./landing.css";
 import "./connections.css";
 import "./launch.css";
+import "./growth.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
