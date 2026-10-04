@@ -2,6 +2,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { config } from "../config.js";
 import { HttpError } from "../http/httpError.js";
 
+type MpPreference = {
+  id?: string;
+  init_point?: string | null;
+  sandbox_init_point?: string | null;
+  external_reference?: string | null;
+  date_created?: string | null;
+};
+
 type MpSubscription = {
   id?: string;
   status?: string;
@@ -236,6 +244,80 @@ export async function createMercadoPagoSubscription(input: {
     externalSubscriptionId: String(result.id),
     checkoutUrl: String(result.init_point),
     status: String(result.status ?? "pending"),
+    raw: result
+  };
+}
+
+export async function createMercadoPagoOneTimeCheckout(input: {
+  checkoutSessionId: string;
+  externalReference: string;
+  customerEmail: string;
+  itemId: string;
+  title: string;
+  currency: string;
+  unitAmountMinor: number;
+  idempotencyKey: string;
+}) {
+  const amount = Number((input.unitAmountMinor / 100).toFixed(2));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new HttpError(
+      "Importe inválido",
+      400,
+      "BILLING_AMOUNT_INVALID"
+    );
+  }
+
+  const buildBackUrl = (state: "success" | "pending" | "failure") => {
+    const url = new URL(config.PUBLIC_BASE_URL);
+    url.searchParams.set("view", "billing");
+    url.searchParams.set("video", "return");
+    url.searchParams.set("video_checkout", input.checkoutSessionId);
+    url.searchParams.set("video_state", state);
+    return url.toString();
+  };
+
+  const notificationUrl = new URL("/api/v1/webhooks/mercadopago", config.PUBLIC_BASE_URL);
+
+  const result = await mpFetch<MpPreference>("/checkout/preferences", {
+    method: "POST",
+    idempotencyKey: input.idempotencyKey,
+    body: {
+      items: [
+        {
+          id: input.itemId.slice(0, 120),
+          title: input.title.slice(0, 120),
+          quantity: 1,
+          currency_id: input.currency.toUpperCase(),
+          unit_price: amount
+        }
+      ],
+      payer: {
+        email: input.customerEmail.trim().toLowerCase()
+      },
+      external_reference: input.externalReference.slice(0, 190),
+      notification_url: notificationUrl.toString(),
+      back_urls: {
+        success: buildBackUrl("success"),
+        pending: buildBackUrl("pending"),
+        failure: buildBackUrl("failure")
+      },
+      auto_return: "approved"
+    }
+  });
+
+  const checkoutUrl = result.init_point ?? result.sandbox_init_point ?? null;
+  if (!result.id || !checkoutUrl) {
+    throw new HttpError(
+      "Mercado Pago no devolvió un checkout válido",
+      502,
+      "MERCADOPAGO_CHECKOUT_INVALID"
+    );
+  }
+
+  return {
+    externalCheckoutId: String(result.id),
+    checkoutUrl: String(checkoutUrl),
+    status: "pending",
     raw: result
   };
 }
