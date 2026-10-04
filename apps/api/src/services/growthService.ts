@@ -499,6 +499,26 @@ export async function createGrowthSequence(input: {
   }
 }
 
+
+export async function updateGrowthSequenceStatus(input: {
+  tenantId: number;
+  sequenceId: number;
+  status: "draft" | "ready" | "active" | "paused" | "completed";
+}) {
+  const [result] = await db.execute<ResultSetHeader>(
+    `UPDATE growth_sequences
+     SET status = ?
+     WHERE id = ? AND tenant_id = ?`,
+    [input.status, input.sequenceId, input.tenantId]
+  );
+
+  if (!result.affectedRows) {
+    throw new HttpError("Secuencia no encontrada", 404, "GROWTH_SEQUENCE_NOT_FOUND");
+  }
+
+  return { id: input.sequenceId, status: input.status };
+}
+
 export async function createGrowthActionDraft(input: {
   tenantId: number;
   campaignId: number;
