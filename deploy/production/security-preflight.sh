@@ -132,6 +132,20 @@ else
   warn "AI generation is disabled; agents will use deterministic fallback"
 fi
 
+video_commerce="$(value_of PULSE_VIDEO_COMMERCE_ENABLED)"
+video_provider="$(value_of PULSE_VIDEO_PROVIDER)"
+fal_key="$(value_of FAL_API_KEY)"
+if [[ "$video_commerce" == "true" ]]; then
+  if [[ "$video_provider" != "fal" ]]; then
+    fail "PULSE_VIDEO_PROVIDER must be fal when premium video commerce is enabled"
+  fi
+  if [[ -z "$fal_key" || "$fal_key" == CHANGE_ME* ]]; then
+    fail "FAL_API_KEY is required when premium video commerce is enabled"
+  fi
+else
+  warn "Premium video commerce is disabled; Video Credit packs cannot be purchased yet"
+fi
+
 mp_token="$(value_of MERCADOPAGO_ACCESS_TOKEN)"
 mp_webhook="$(value_of MERCADOPAGO_WEBHOOK_SECRET)"
 mp_mode="$(value_of MERCADOPAGO_MODE)"
