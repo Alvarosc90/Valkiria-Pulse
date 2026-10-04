@@ -1,6 +1,7 @@
 import { db } from "../src/db.js";
 import { schedulerTick } from "../src/services/schedulerService.js";
 import { refreshDueSocialTokens } from "../src/services/socialTokenRefreshService.js";
+import { processPendingGrowthSignals } from "../src/services/growthSignalProcessor.js";
 
 const intervalMs = Number(process.env.PULSE_WORKER_INTERVAL_MS ?? 30000);
 const tokenRefreshIntervalMs = Number(
@@ -32,17 +33,25 @@ async function main() {
         lastTokenRefreshAt = startedAt;
       }
 
-      const result = await schedulerTick();
+      const [result, growth] = await Promise.all([
+        schedulerTick(),
+        processPendingGrowthSignals()
+      ]);
 
       if (
         tokenRefresh.length ||
         result.polled.length ||
-        result.published.length
+        result.published.length ||
+        growth.processed ||
+        growth.ignored ||
+        growth.actionsDrafted ||
+        growth.actionsBlocked
       ) {
         console.log(JSON.stringify({
           service: "pulse-worker",
           elapsedMs: Date.now() - startedAt,
           tokenRefresh,
+          growth,
           ...result
         }));
       }
