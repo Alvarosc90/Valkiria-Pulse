@@ -108,6 +108,30 @@ if [[ -n "$smtp_user" && -z "$smtp_password" ]]; then
   fail "SMTP_PASSWORD is required when SMTP_USER is configured"
 fi
 
+llm_provider="$(value_of PULSE_LLM_PROVIDER)"
+llm_base_url="$(value_of PULSE_LLM_BASE_URL)"
+llm_api_key="$(value_of PULSE_LLM_API_KEY)"
+llm_model="$(value_of PULSE_LLM_MODEL)"
+llm_concurrency="$(value_of PULSE_LLM_MAX_CONCURRENCY)"
+if [[ "$llm_provider" == "openai" ]]; then
+  if [[ "$llm_base_url" != "https://api.openai.com" && "$llm_base_url" != "https://api.openai.com/" && "$llm_base_url" != "https://api.openai.com/v1" ]]; then
+    fail "PULSE_LLM_BASE_URL must point to the official OpenAI API when PULSE_LLM_PROVIDER=openai"
+  fi
+  if [[ -z "$llm_model" ]]; then
+    fail "PULSE_LLM_MODEL is required when OpenAI is enabled"
+  fi
+  if [[ -z "$llm_api_key" || "$llm_api_key" == CHANGE_ME* ]]; then
+    fail "PULSE_LLM_API_KEY is required when OpenAI is enabled"
+  fi
+  if [[ -z "$llm_concurrency" ]]; then
+    fail "PULSE_LLM_MAX_CONCURRENCY is required when OpenAI is enabled"
+  fi
+elif [[ -n "$llm_base_url" || -n "$llm_model" ]]; then
+  warn "AI model endpoint is configured with provider '$llm_provider'; verify pricing fields match that provider"
+else
+  warn "AI generation is disabled; agents will use deterministic fallback"
+fi
+
 mp_token="$(value_of MERCADOPAGO_ACCESS_TOKEN)"
 mp_webhook="$(value_of MERCADOPAGO_WEBHOOK_SECRET)"
 mp_mode="$(value_of MERCADOPAGO_MODE)"
