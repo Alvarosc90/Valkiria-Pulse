@@ -755,6 +755,7 @@ export default function App() {
 
         {view === "growth" && (
           <GrowthCenterView
+            brandId={brandId}
             brandName={activeBrand?.name}
             onNotice={setNotice}
           />
