@@ -226,6 +226,34 @@ function publicUrl(path: string, token: string) {
   return base + path + "?token=" + encodeURIComponent(token);
 }
 
+function pulseEmailShell(input: {
+  eyebrow: string;
+  title: string;
+  greeting: string;
+  body: string;
+  actionLabel?: string;
+  actionUrl?: string;
+  footnote?: string;
+}) {
+  const action = input.actionLabel && input.actionUrl
+    ? '<p style="margin:28px 0"><a href="' + escapeHtml(input.actionUrl) + '" style="display:inline-block;padding:13px 20px;background:#1478e8;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">' + escapeHtml(input.actionLabel) + '</a></p>'
+    : "";
+  const fallback = input.actionUrl
+    ? '<p style="margin:22px 0 0;color:#6c7f95;font-size:12px;line-height:1.6">Si el botón no funciona, copiá este enlace en tu navegador:<br><span style="word-break:break-all;color:#4e9fe8">' + escapeHtml(input.actionUrl) + '</span></p>'
+    : "";
+
+  return '<!doctype html><html><body style="margin:0;background:#050914;font-family:Arial,sans-serif;color:#eaf2fb">' +
+    '<div style="padding:34px 16px"><div style="max-width:620px;margin:0 auto;border:1px solid #20334c;border-radius:18px;background:#08111e;overflow:hidden">' +
+    '<div style="padding:24px 28px;border-bottom:1px solid #18293d;background:#0a1626"><div style="font-size:12px;font-weight:800;letter-spacing:.14em;color:#5fcaf5">VALKIRIA PULSE</div><div style="margin-top:5px;font-size:11px;color:#637a94">Cada red. Su propio pulso.</div></div>' +
+    '<div style="padding:30px 28px"><div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:#5fcaf5">' + escapeHtml(input.eyebrow) + '</div>' +
+    '<h1 style="margin:10px 0 18px;font-size:30px;line-height:1.1;color:#f4f8fd">' + escapeHtml(input.title) + '</h1>' +
+    '<p style="margin:0 0 14px;color:#b7c6d7;line-height:1.7">Hola ' + escapeHtml(input.greeting) + '.</p>' +
+    '<p style="margin:0;color:#8fa1b6;line-height:1.75">' + input.body + '</p>' +
+    action + fallback +
+    (input.footnote ? '<p style="margin:24px 0 0;padding-top:18px;border-top:1px solid #17283c;color:#667b94;font-size:12px;line-height:1.6">' + input.footnote + '</p>' : '') +
+    '</div></div></div></body></html>';
+}
+
 export function verificationEmail(input: {
   to: string;
   displayName: string;
@@ -263,27 +291,31 @@ export function passwordResetEmail(input: {
   token: string;
 }) {
   const url = publicUrl("/recuperar", input.token);
-  const safeName = escapeHtml(input.displayName);
-  const safeUrl = escapeHtml(url);
 
   return sendMail({
     to: input.to,
-    subject: "Recuperá tu contraseña de Valkiria PULSE",
+    subject: "Recuperá tu acceso a Valkiria PULSE",
     text: [
       "Hola " + input.displayName + ".",
-      "Recibimos una solicitud para restablecer tu contraseña:",
+      "Recibimos una solicitud para restablecer tu contraseña de Valkiria PULSE.",
+      "Abrí este enlace seguro:",
       url,
       "El enlace vence en 20 minutos y puede utilizarse una sola vez.",
-      "Si no solicitaste el cambio, ignorá este mensaje."
+      "Cuando cambies la contraseña, las sesiones anteriores quedarán revocadas.",
+      "Si no solicitaste este cambio, ignorá el mensaje o escribí a " + config.PULSE_SUPPORT_EMAIL + "."
     ].join("\n\n"),
-    html:
-      '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#142033">' +
-      "<h2>Recuperá tu contraseña</h2>" +
-      "<p>Hola " + safeName + ".</p>" +
-      '<p><a href="' + safeUrl + '" style="display:inline-block;padding:12px 18px;background:#0d72e8;color:#fff;text-decoration:none;border-radius:9px">Crear nueva contraseña</a></p>' +
-      '<p style="font-size:12px;word-break:break-all">' + safeUrl + "</p>" +
-      "<p>El enlace vence en 20 minutos y puede utilizarse una sola vez.</p>" +
-      "</body></html>"
+    html: pulseEmailShell({
+      eyebrow: "RECUPERACIÓN SEGURA",
+      title: "Creá una nueva contraseña",
+      greeting: input.displayName,
+      body:
+        "Recibimos una solicitud para recuperar tu acceso. El enlace es privado, vence en <strong style=\"color:#dbe8f6\">20 minutos</strong> y sólo puede usarse una vez.",
+      actionLabel: "Crear nueva contraseña",
+      actionUrl: url,
+      footnote:
+        "Si no solicitaste este cambio, podés ignorar este mensaje. Ante cualquier duda escribinos a " +
+        escapeHtml(config.PULSE_SUPPORT_EMAIL) + "."
+    })
   });
 }
 
@@ -294,18 +326,22 @@ export function passwordChangedEmail(input: {
   return sendMail({
     to: input.to,
     subject: "Tu contraseña de Valkiria PULSE fue actualizada",
-    text:
-      "Hola " + input.displayName +
-      ". La contraseña de tu cuenta fue actualizada. Si no realizaste este cambio, contactá a " +
-      config.PULSE_SUPPORT_EMAIL + " inmediatamente.",
-    html:
-      '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#142033">' +
-      "<h2>Contraseña actualizada</h2>" +
-      "<p>Hola " + escapeHtml(input.displayName) + ".</p>" +
-      "<p>La contraseña de tu cuenta fue actualizada correctamente.</p>" +
-      "<p>Si no realizaste este cambio, contactá a " +
-      escapeHtml(config.PULSE_SUPPORT_EMAIL) +
-      " inmediatamente.</p></body></html>"
+    text: [
+      "Hola " + input.displayName + ".",
+      "La contraseña de tu cuenta fue actualizada correctamente.",
+      "Todas las sesiones anteriores quedaron revocadas.",
+      "Si no realizaste este cambio, contactá a " + config.PULSE_SUPPORT_EMAIL + " inmediatamente."
+    ].join("\n\n"),
+    html: pulseEmailShell({
+      eyebrow: "SEGURIDAD",
+      title: "Contraseña actualizada",
+      greeting: input.displayName,
+      body:
+        "Tu nueva contraseña ya está activa. Para proteger tu cuenta, <strong style=\"color:#dbe8f6\">cerramos las sesiones anteriores</strong> y vas a tener que iniciar sesión nuevamente en tus dispositivos.",
+      footnote:
+        "¿No fuiste vos? Contactanos inmediatamente en " +
+        escapeHtml(config.PULSE_SUPPORT_EMAIL) + "."
+    })
   });
 }
 
