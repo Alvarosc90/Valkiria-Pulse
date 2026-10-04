@@ -336,15 +336,32 @@ export async function upsertGrowthContact(input: {
 }) {
   if (input.brandId) await assertBrand(input.tenantId, input.brandId);
 
-  const [existing] = await db.query<RowDataPacket[]>(
-    `SELECT id
-     FROM growth_contacts
-     WHERE tenant_id = ?
-       AND source_system = ?
-       AND external_ref <=> ?
-     LIMIT 1`,
-    [input.tenantId, input.sourceSystem, input.externalRef ?? null]
-  );
+  if (!input.externalRef && !input.phoneE164) {
+    throw new HttpError(
+      "El contacto necesita externalRef o teléfono E.164",
+      400,
+      "GROWTH_CONTACT_IDENTITY_REQUIRED"
+    );
+  }
+
+  const [existing] = input.externalRef
+    ? await db.query<RowDataPacket[]>(
+        `SELECT id
+         FROM growth_contacts
+         WHERE tenant_id = ?
+           AND source_system = ?
+           AND external_ref = ?
+         LIMIT 1`,
+        [input.tenantId, input.sourceSystem, input.externalRef]
+      )
+    : await db.query<RowDataPacket[]>(
+        `SELECT id
+         FROM growth_contacts
+         WHERE tenant_id = ?
+           AND phone_e164 = ?
+         LIMIT 1`,
+        [input.tenantId, input.phoneE164]
+      );
 
   if (existing[0]) {
     await db.execute(
@@ -529,7 +546,8 @@ export async function createGrowthActionDraft(input: {
     `INSERT INTO growth_channel_actions
      (tenant_id, campaign_id, sequence_id, step_id, contact_id, channel,
       execution_mode, status, idempotency_key, payload_json, scheduled_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'drafted', ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'drafted', ?, ?, ?)
+     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
     [
       input.tenantId,
       input.campaignId,
@@ -544,7 +562,11 @@ export async function createGrowthActionDraft(input: {
     ]
   );
 
-  return { id: Number(result.insertId), status: "drafted" as const };
+  return {
+    id: Number(result.insertId),
+    status: "drafted" as const,
+    idempotentReplay: result.affectedRows !== 1
+  };
 }
 
 export async function recordGrowthConversion(input: {
