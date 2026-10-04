@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-router.get("/", requireRole("owner", "admin"), async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const data = await listBusinessConnectors(Number(req.auth!.tenantId));
     res.json({ data });
