@@ -19,7 +19,8 @@
     "db:infra:bootstrap": "tsx scripts/db-infra-bootstrap.ts",
     "db:seed:dev": "tsx scripts/seed-dev.ts",
     "social:upsert": "tsx scripts/upsert-social-account.ts",
-    "test": "node --import tsx --test src/billing/mercadoPago.test.ts"
+    "test": "node --import tsx --test src/billing/mercadoPago.test.ts",
+    "owner:bootstrap": "tsx scripts/bootstrap-owner.ts"
   },
   "dependencies": {
     "@pulse/agents": "*",
