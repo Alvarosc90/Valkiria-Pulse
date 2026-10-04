@@ -4,6 +4,7 @@ import { z } from "zod";
 import { config } from "../config.js";
 import { refreshCookieOptions } from "../auth/cookie.js";
 import { exchangeTrainiaSso } from "./trainia.js";
+import { ingestTrainiaGrowthSignal } from "./growthSignals.js";
 
 const router = Router();
 
@@ -12,6 +13,32 @@ const limiter = rateLimit({
   limit: 30,
   standardHeaders: "draft-8",
   legacyHeaders: false
+});
+
+const growthLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
+
+router.post("/trainia/growth-events", growthLimiter, async (req, res, next) => {
+  try {
+    const authorization = req.get("authorization") ?? "";
+    const [scheme, token] = authorization.split(" ");
+    if (scheme !== "Bearer" || !token) {
+      res.status(401).json({
+        error: "GROWTH_SIGNAL_AUTH_REQUIRED",
+        message: "Evento Growth firmado requerido"
+      });
+      return;
+    }
+
+    const data = await ingestTrainiaGrowthSignal(token);
+    res.status(data.idempotentReplay ? 200 : 202).json({ data });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/trainia/exchange", limiter, async (req, res, next) => {
