@@ -32,6 +32,7 @@ import { CookieConsent } from "./views/CookieConsent";
 import { PasswordRecoveryPage } from "./views/PasswordRecoveryPage";
 import { SecurityView } from "./views/SecurityView";
 import { VerifyEmailPage } from "./views/VerifyEmailPage";
+import { GrowthCenterView } from "./views/GrowthCenterView";
 import { LEGAL_BY_PATH, LEGAL_PATHS, type LegalType } from "./legal";
 
 type WorkspaceView =
@@ -39,6 +40,7 @@ type WorkspaceView =
   | "calendar"
   | "approvals"
   | "media"
+  | "growth"
   | "agents"
   | "billing"
   | "analytics"
@@ -78,6 +80,7 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "calendar", label: "Calendarios" },
   { id: "approvals", label: "Publicaciones" },
   { id: "media", label: "Biblioteca" },
+  { id: "growth", label: "Growth & Retención" },
   { id: "agents", label: "Agentes" },
   { id: "billing", label: "Plan y uso" },
   { id: "analytics", label: "Analytics" },
@@ -248,6 +251,7 @@ export default function App() {
       requestedView === "calendar" ||
       requestedView === "approvals" ||
       requestedView === "media" ||
+      requestedView === "growth" ||
       requestedView === "agents" ||
       requestedView === "billing" ||
       requestedView === "analytics" ||
@@ -375,7 +379,7 @@ export default function App() {
           src={PULSE_LOGO_SRC}
           alt="Valkiria PULSE"
         />
-        <span>Preparando tu command center...</span>
+        <span>Preparando tu Growth Command Center...</span>
       </div>
     );
   }
@@ -491,19 +495,19 @@ export default function App() {
       <main className="content">
         <header className="topbar">
           <div>
-            <span className="eyebrow">Social command center</span>
+            <span className="eyebrow">Growth · Comunicación · Retención</span>
             <h1>
               {view === "overview"
-                ? "Tu marca tiene un pulso distinto en cada red."
+                ? "Convertí los datos de tu negocio en acciones."
                 : "Valkiria PULSE"}
             </h1>
             <p>
-              Tres agentes, tres calendarios y una sola operación. PULSE mantiene
-              separado el contexto editorial de Instagram, TikTok y LinkedIn.
+              Contenido, WhatsApp, campañas, seguimiento y retención coordinados por agentes especializados.
+              Paid Media queda como integración opcional y el presupuesto publicitario se paga al proveedor.
             </p>
           </div>
-          <button className="primary-button" onClick={() => changeView("calendar")}>
-            Nueva publicación
+          <button className="primary-button" onClick={() => changeView("growth")}>
+            Nueva campaña
           </button>
         </header>
 
@@ -552,9 +556,9 @@ export default function App() {
                 <small>en los tres calendarios</small>
               </article>
               <article className="stat-card">
-                <span>Agentes activos</span>
-                <strong>3</strong>
-                <small>contexto aislado por red</small>
+                <span>Motor PULSE</span>
+                <strong>3 capas</strong>
+                <small>contenido · growth · paid media opcional</small>
               </article>
               <article className="stat-card">
                 <span>Redes conectadas</span>
@@ -564,9 +568,27 @@ export default function App() {
                 <small>de 3 disponibles</small>
               </article>
               <article className="stat-card">
-                <span>Analytics</span>
-                <strong>—</strong>
-                <small>preparado para permisos futuros</small>
+                <span>Growth</span>
+                <strong>Activo</strong>
+                <small>campañas, seguimiento y retención</small>
+              </article>
+            </section>
+
+            <section className="pulse-pillars-grid">
+              <article className="pulse-pillar-card">
+                <span>01 · Contenido</span>
+                <h3>Redes con contexto propio</h3>
+                <p>Instagram, TikTok y LinkedIn mantienen su lógica editorial y sus agentes especializados.</p>
+              </article>
+              <article className="pulse-pillar-card">
+                <span>02 · Growth & Retention</span>
+                <h3>Campañas sobre datos reales</h3>
+                <p>WhatsApp, audiencias, reactivación, seguimiento, promociones, cross-sell y retención.</p>
+              </article>
+              <article className="pulse-pillar-card optional">
+                <span>03 · Paid Media opcional</span>
+                <h3>Meta Ads + Google Ads</h3>
+                <p>PULSE prepara y mide; la inversión publicitaria la paga el cliente directamente.</p>
               </article>
             </section>
 
@@ -685,22 +707,22 @@ export default function App() {
 
               <aside className="agent-panel">
                 <span className="eyebrow">Orquestación</span>
-                <h2>Social Orchestrator</h2>
+                <h2>PULSE Growth Engine</h2>
                 <p>
-                  Recibe cada fila importada y la deriva únicamente al agente de su red.
-                  El agente crea; el provider publica.
+                  Toma señales del negocio, crea audiencias y deriva cada acción al agente y canal correcto.
+                  Las redes generan demanda; WhatsApp y seguimiento ayudan a convertir y retener.
                 </p>
                 <div className="flow-step">
-                  <span>01</span><strong>Calendario</strong><small>intención editorial</small>
+                  <span>01</span><strong>Datos</strong><small>actividad, compras y contexto</small>
                 </div>
                 <div className="flow-step">
-                  <span>02</span><strong>Agente</strong><small>contexto por plataforma</small>
+                  <span>02</span><strong>Audiencia</strong><small>segmentación por intención</small>
                 </div>
                 <div className="flow-step">
-                  <span>03</span><strong>Provider</strong><small>API determinística</small>
+                  <span>03</span><strong>Acción</strong><small>contenido, WhatsApp o campaña</small>
                 </div>
                 <div className="flow-step">
-                  <span>04</span><strong>Historial</strong><small>estado y memoria</small>
+                  <span>04</span><strong>Resultado</strong><small>conversión y retención</small>
                 </div>
               </aside>
             </section>
@@ -727,6 +749,13 @@ export default function App() {
         {view === "media" && (
           <MediaLibraryView
             brandId={brandId}
+            onNotice={setNotice}
+          />
+        )}
+
+        {view === "growth" && (
+          <GrowthCenterView
+            brandName={activeBrand?.name}
             onNotice={setNotice}
           />
         )}
@@ -822,10 +851,10 @@ function LoginScreen({
             alt="Valkiria PULSE"
           />
         </div>
-        <h1>Contenido distinto. Contexto correcto. Una sola operación.</h1>
+        <h1>Datos, comunicación y crecimiento en una sola operación.</h1>
         <p>
-          PULSE coordina agentes especializados para Instagram, TikTok y LinkedIn
-          sin mezclar la lógica editorial de cada red.
+          PULSE coordina contenido, WhatsApp, campañas, seguimiento y retención.
+          Cada canal conserva su lógica, mientras el negocio comparte contexto y objetivos.
         </p>
       </section>
 
