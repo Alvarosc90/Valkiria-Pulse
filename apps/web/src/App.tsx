@@ -33,6 +33,7 @@ import { PasswordRecoveryPage } from "./views/PasswordRecoveryPage";
 import { SecurityView } from "./views/SecurityView";
 import { VerifyEmailPage } from "./views/VerifyEmailPage";
 import { GrowthCenterView } from "./views/GrowthCenterView";
+import { BusinessConnectorsView } from "./views/BusinessConnectorsView";
 import { LEGAL_BY_PATH, LEGAL_PATHS, type LegalType } from "./legal";
 
 type WorkspaceView =
@@ -41,6 +42,7 @@ type WorkspaceView =
   | "approvals"
   | "media"
   | "growth"
+  | "integrations"
   | "agents"
   | "billing"
   | "analytics"
@@ -81,6 +83,7 @@ const navigation: Array<{ id: WorkspaceView; label: string }> = [
   { id: "approvals", label: "Publicaciones" },
   { id: "media", label: "Biblioteca" },
   { id: "growth", label: "Growth & Retención" },
+  { id: "integrations", label: "Integraciones" },
   { id: "agents", label: "Agentes" },
   { id: "billing", label: "Plan y uso" },
   { id: "analytics", label: "Analytics" },
@@ -252,6 +255,7 @@ export default function App() {
       requestedView === "approvals" ||
       requestedView === "media" ||
       requestedView === "growth" ||
+      requestedView === "integrations" ||
       requestedView === "agents" ||
       requestedView === "billing" ||
       requestedView === "analytics" ||
@@ -757,6 +761,14 @@ export default function App() {
           <GrowthCenterView
             brandId={brandId}
             brandName={activeBrand?.name}
+            onNotice={setNotice}
+          />
+        )}
+
+        {view === "integrations" && (
+          <BusinessConnectorsView
+            brandId={brandId}
+            role={auth.role}
             onNotice={setNotice}
           />
         )}
