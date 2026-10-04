@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { config } from "../config.js";
 import { db } from "../db.js";
 import { HttpError } from "../http/httpError.js";
 import {
@@ -32,6 +33,30 @@ type CheckoutRow = RowDataPacket & {
   provider_status: string | null;
   expires_at: Date | null;
 };
+
+async function assertVideoCommerceReady() {
+  if (!config.PULSE_VIDEO_COMMERCE_ENABLED || !config.FAL_API_KEY) {
+    throw new HttpError(
+      "La compra de Video Credits todavía no está habilitada",
+      503,
+      "VIDEO_COMMERCE_NOT_READY"
+    );
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS total
+     FROM video_model_catalog
+     WHERE status = 'active'
+       AND generation_enabled = 1`
+  );
+  if (Number(rows[0]?.total ?? 0) < 1) {
+    throw new HttpError(
+      "Los modelos de video todavía no están habilitados para generación",
+      503,
+      "VIDEO_MODELS_NOT_READY"
+    );
+  }
+}
 
 async function assertEntitled(tenantId: number) {
   const subscription = await getTenantSubscription(tenantId);
@@ -150,6 +175,7 @@ export async function startVideoCreditCheckout(input: {
   currency: string;
   idempotencyKey: string;
 }) {
+  await assertVideoCommerceReady();
   const prepared = await prepareVideoCreditCheckout(input);
   if (
     prepared.status === "pending" &&
