@@ -5,6 +5,7 @@ import { config } from "../config.js";
 import { refreshCookieOptions } from "../auth/cookie.js";
 import { exchangeTrainiaSso } from "./trainia.js";
 import { ingestTrainiaGrowthSignal } from "./growthSignals.js";
+import { ingestBusinessConnectorEvent } from "./businessConnectors.js";
 
 const router = Router();
 
@@ -20,6 +21,30 @@ const growthLimiter = rateLimit({
   limit: 300,
   standardHeaders: "draft-8",
   legacyHeaders: false
+});
+
+router.post("/connectors/:publicId/events", growthLimiter, async (req, res, next) => {
+  try {
+    const publicId = z.string().uuid().parse(req.params.publicId);
+    const authorization = req.get("authorization") ?? "";
+    const [scheme, token] = authorization.split(" ");
+    if (scheme !== "Bearer" || !token) {
+      res.status(401).json({
+        error: "CONNECTOR_AUTH_REQUIRED",
+        message: "Evento firmado de conector requerido"
+      });
+      return;
+    }
+
+    const data = await ingestBusinessConnectorEvent({
+      publicId,
+      rawToken: token
+    });
+
+    res.status(data.idempotentReplay ? 200 : 202).json({ data });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/trainia/growth-events", growthLimiter, async (req, res, next) => {
