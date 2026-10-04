@@ -435,3 +435,10 @@
 @media (max-width: 430px) {
   .video-model-costs { grid-template-columns: 1fr; }
 }
+
+.video-commerce-pending {
+  margin-top: 5px;
+  border-left: 2px solid #8a6b33;
+  padding-left: 9px;
+  color: #b69a66 !important;
+}
