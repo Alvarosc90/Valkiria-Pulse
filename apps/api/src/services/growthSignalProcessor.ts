@@ -1,5 +1,4 @@
 import type { RowDataPacket } from "mysql2";
-import { config } from "../config.js";
 import { db } from "../db.js";
 import {
   growthConditionsMatch,
@@ -14,10 +13,6 @@ function channelForStep(channel: string, paidProvider?: string | null) {
 }
 
 export async function processPendingGrowthSignals(limit = 50) {
-  if (!config.PULSE_GROWTH_INTEGRATIONS_ENABLED) {
-    return { processed: 0, ignored: 0, actionsDrafted: 0, actionsBlocked: 0 };
-  }
-
   const [signals] = await db.query<RowDataPacket[]>(
     `SELECT id, tenant_id AS tenantId, brand_id AS brandId,
             source_system AS sourceSystem, event_type AS eventType,
