@@ -1,11 +1,10 @@
 import type { RowDataPacket } from "mysql2";
 import { config } from "../config.js";
 import { db } from "../db.js";
-i  rule &&
-    typeof rule.path === "string" &&
-    matchesRule(payload, rule)
-  );
-}
+import {
+  growthConditionsMatch,
+  growthObjectValue
+} from "./growthRuleEngine.js";
 
 function channelForStep(channel: string, paidProvider?: string | null) {
   if (channel === "manual_paid_media") {
