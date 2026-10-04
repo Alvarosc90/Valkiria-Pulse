@@ -11,3 +11,5 @@ uploads/
 *.tsbuildinfo
 package-lock.json
 apps/web/public/assets/branding/4_VALKIRIA PULSE.png
+apps/web/public/assets/branding/favicon-pulse.png
+apps/web/public/assets/branding/valkiria-pulse.png
