@@ -71,7 +71,7 @@ const plans = [
     ars: "ARS 24.900",
     usd: "USD 19",
     annual: "Anual: ARS 249.000 · USD 190",
-    items: ["1 marca", "Hasta 3 cuentas sociales", "60 publicaciones / mes", "150 generaciones IA / mes", "Brand Brain + Excel"],
+    items: ["1 marca", "Hasta 3 cuentas sociales", "60 publicaciones / mes", "150 generaciones IA / mes", "Video premium disponible con créditos prepagos"],
     cta: "Empezar 14 días"
   },
   {
@@ -81,7 +81,7 @@ const plans = [
     ars: "ARS 59.900",
     usd: "USD 49",
     annual: "Anual: ARS 599.000 · USD 490",
-    items: ["Hasta 3 marcas", "Hasta 9 cuentas sociales", "250 publicaciones / mes", "800 generaciones IA / mes", "Auditoría + biblioteca + Analytics"],
+    items: ["Hasta 3 marcas", "Hasta 9 cuentas sociales", "250 publicaciones / mes", "800 generaciones IA / mes", "Video premium con packs prepagos + Analytics"],
     cta: "Crear cuenta"
   },
   {
@@ -91,7 +91,7 @@ const plans = [
     ars: "ARS 119.900",
     usd: "USD 99",
     annual: "Anual: ARS 1.199.000 · USD 990",
-    items: ["Hasta 10 marcas", "Hasta 30 cuentas sociales", "1.200 publicaciones / mes", "5.000 generaciones IA / mes", "Aprobaciones de equipo + prioridad"],
+    items: ["Hasta 10 marcas", "Hasta 30 cuentas sociales", "1.200 publicaciones / mes", "5.000 generaciones IA / mes", "Video premium con packs prepagos + prioridad"],
     cta: "Crear cuenta"
   }
 ];
@@ -411,6 +411,55 @@ export function PublicLanding({
           </div>
         </section>
 
+        <section className="landing-section landing-video-section" id="video">
+          <div className="landing-section-heading centered">
+            <span className="landing-pill soft">Video premium · pagás sólo cuando lo necesitás</span>
+            <h2>Generá video sin inflar tu suscripción.</h2>
+            <p>
+              Los planes incluyen la inteligencia editorial de PULSE. El contenido de video
+              se compra aparte con Video Credits prepagos y se descuenta según calidad,
+              duración y modelo. Si una generación falla, PULSE libera la reserva.
+            </p>
+          </div>
+
+          <div className="landing-video-tier-grid">
+            <article>
+              <span>FAST</span>
+              <h3>Video Fast</h3>
+              <p>Para volumen, pruebas creativas y piezas rápidas de campaña.</p>
+              <strong>Desde 5 créditos / segundo</strong>
+            </article>
+            <article className="quality">
+              <span>QUALITY</span>
+              <h3>Video Quality</h3>
+              <p>Más detalle y consistencia para contenido principal de marca.</p>
+              <strong>Desde 7 créditos / segundo</strong>
+            </article>
+            <article className="premium">
+              <span>PREMIUM</span>
+              <h3>Video Premium</h3>
+              <p>Modelos de mayor costo para campañas donde la calidad justifica la inversión.</p>
+              <strong>Desde 40 créditos / segundo</strong>
+            </article>
+          </div>
+
+          <div className="landing-video-credit-copy">
+            <div>
+              <span className="eyebrow">Sin compromiso de consumo</span>
+              <h3>Comprá créditos cuando haya demanda.</h3>
+              <p>
+                No necesitás pagar video todos los meses. Los packs se compran desde PULSE
+                cuando tu marca realmente va a producir contenido audiovisual.
+              </p>
+            </div>
+            <div className="landing-video-pack-preview">
+              <span>500 créditos</span>
+              <span>1.500 créditos</span>
+              <span>4.000 créditos</span>
+            </div>
+          </div>
+        </section>
+
         <section className="landing-section landing-flow" id="flujo">
           <div className="landing-section-heading centered">
             <span className="landing-pill soft">Un flujo simple, poderoso</span>
@@ -434,8 +483,8 @@ export function PublicLanding({
             <span className="landing-pill soft">Empezá simple y escalá</span>
             <h2>Planes pensados para crecer con tu operación.</h2>
             <p>
-              El plan Inicial puede probarse durante 14 días. Los valores comerciales
-              definitivos se informan antes de contratar para que siempre veas condiciones vigentes.
+              Elegí el plan por marcas, volumen y colaboración. La IA de texto está incluida
+              según el límite del plan; el video premium se compra por créditos prepagos cuando lo necesitás.
             </p>
           </div>
 
@@ -463,6 +512,7 @@ export function PublicLanding({
           </div>
           <p className="landing-enterprise-note">
             ¿Más de 10 marcas o necesitás límites especiales? Enterprise se cotiza a medida.
+            Los Video Credits son un consumo adicional y no forman parte de la cuota mensual.
           </p>
         </section>
 

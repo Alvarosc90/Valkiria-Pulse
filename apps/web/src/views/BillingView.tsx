@@ -50,6 +50,47 @@ type ProviderAccount = {
   countryId: string | null;
 };
 
+
+type VideoCreditPack = {
+  key: string;
+  name: string;
+  description?: string | null;
+  credits: number;
+  metadata?: Record<string, unknown>;
+  price: {
+    id: number;
+    currency: string;
+    unitAmountMinor: number;
+  } | null;
+};
+
+type VideoModel = {
+  key: string;
+  name: string;
+  tier: "fast" | "quality" | "premium";
+  billingUnit: "second" | "video";
+  creditsPerUnit: number;
+  generationEnabled: boolean;
+};
+
+type VideoWallet = {
+  availableCredits: number;
+  reservedCredits: number;
+  lifetimePurchasedCredits: number;
+  lifetimeConsumedCredits: number;
+};
+
+type VideoCreditCatalog = {
+  commerceEnabled: boolean;
+  provider?: {
+    key: string;
+    configured: boolean;
+    generationEnabled: boolean;
+  };
+  packs: VideoCreditPack[];
+  models: VideoModel[];
+};
+
 function formatMoney(price?: Price) {
   if (!price) return "No disponible";
   return new Intl.NumberFormat("es-AR", {
@@ -93,26 +134,53 @@ export function BillingView({
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [testingProvider, setTestingProvider] = useState(false);
   const [providerAccount, setProviderAccount] = useState<ProviderAccount | null>(null);
+  const [videoCatalog, setVideoCatalog] = useState<VideoCreditCatalog>({
+    commerceEnabled: false,
+    packs: [],
+    models: []
+  });
+  const [videoWallet, setVideoWallet] = useState<VideoWallet>({
+    availableCredits: 0,
+    reservedCredits: 0,
+    lifetimePurchasedCredits: 0,
+    lifetimeConsumedCredits: 0
+  });
+  const [busyVideoPack, setBusyVideoPack] = useState<string | null>(null);
 
   const canManage = role === "owner" || role === "admin";
 
   async function load() {
     setLoading(true);
     try {
-      const [catalog, current, providerStatus] = await Promise.all([
+      const [catalog, current, providerStatus, video, wallet] = await Promise.all([
         apiJson<{ data: Plan[] }>(
           "/api/v1/billing/catalog?currency=" + currency + "&interval=" + interval
         ),
         apiJson<{
           data: { subscription: Subscription | null; usage: Record<string, number> };
         }>("/api/v1/billing/subscription"),
-        apiJson<{ data: ProviderStatus }>("/api/v1/billing/provider/status")
+        apiJson<{ data: ProviderStatus }>("/api/v1/billing/provider/status"),
+        apiJson<{ data: VideoCreditCatalog }>(
+          "/api/v1/video-credits/catalog?currency=" + currency
+        ),
+        apiJson<{ data: VideoWallet }>("/api/v1/video-credits/wallet")
       ]);
 
       setPlans(catalog.data ?? []);
       setSubscription(current.data.subscription ?? null);
       setUsage(current.data.usage ?? {});
       setProvider(providerStatus.data);
+      setVideoCatalog(video.data ?? {
+        commerceEnabled: false,
+        packs: [],
+        models: []
+      });
+      setVideoWallet(wallet.data ?? {
+        availableCredits: 0,
+        reservedCredits: 0,
+        lifetimePurchasedCredits: 0,
+        lifetimeConsumedCredits: 0
+      });
     } catch (error) {
       onNotice(
         error instanceof Error
@@ -207,6 +275,53 @@ export function BillingView({
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutId = params.get("video_checkout");
+    if (params.get("video") !== "return" || !checkoutId) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      for (let attempt = 0; attempt < 8 && !cancelled; attempt += 1) {
+        try {
+          const result = await apiJson<{
+            data: { status: string; credits?: number };
+          }>("/api/v1/video-credits/checkout/" + encodeURIComponent(checkoutId));
+
+          if (result.data.status === "completed") {
+            onNotice("Video Credits acreditados. Ya están disponibles en tu cuenta.");
+            await load();
+            window.history.replaceState({}, "", "/?view=billing");
+            return;
+          }
+
+          if (["failed", "cancelled", "expired"].includes(result.data.status)) {
+            onNotice("La compra de Video Credits no se completó. Podés volver a intentarlo.");
+            window.history.replaceState({}, "", "/?view=billing");
+            return;
+          }
+        } catch {
+          // Mercado Pago puede estar procesando todavía el webhook.
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1600));
+      }
+
+      if (!cancelled) {
+        onNotice(
+          "Mercado Pago todavía está procesando la compra. Los créditos se acreditarán automáticamente al confirmarse el pago."
+        );
+        window.history.replaceState({}, "", "/?view=billing");
+      }
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const limits = subscription?.plan?.limits ?? {};
   const usageRows = useMemo(
     () =>
@@ -263,6 +378,48 @@ export function BillingView({
       );
     } finally {
       setBusyPlan(null);
+    }
+  }
+
+  async function startVideoCreditCheckout(pack: VideoCreditPack) {
+    if (!pack.price || !canManage) return;
+
+    if (!provider?.configured) {
+      onNotice("Mercado Pago todavía no está configurado para comprar Video Credits.");
+      return;
+    }
+
+    setBusyVideoPack(pack.key);
+    try {
+      const result = await apiJson<{
+        data: {
+          id: string;
+          checkoutUrl?: string | null;
+          credits: number;
+        };
+      }>("/api/v1/video-credits/checkout/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          packKey: pack.key,
+          currency: pack.price.currency,
+          idempotencyKey: idempotency("video-pack-" + pack.key)
+        })
+      });
+
+      if (!result.data.checkoutUrl) {
+        throw new Error("Mercado Pago no devolvió una URL de pago");
+      }
+
+      window.location.assign(result.data.checkoutUrl);
+    } catch (error) {
+      onNotice(
+        error instanceof Error
+          ? error.message
+          : "No se pudo iniciar la compra de Video Credits"
+      );
+    } finally {
+      setBusyVideoPack(null);
     }
   }
 
@@ -476,6 +633,102 @@ export function BillingView({
           );
         })}
       </div>
+
+      <section className="video-credit-section">
+        <div className="section-heading billing-plans-heading">
+          <div>
+            <span className="eyebrow">Contenido premium</span>
+            <h2>Video Credits</h2>
+            <p className="video-credit-intro">
+              El video se compra por consumo. Elegís un pack una sola vez y PULSE
+              descuenta créditos según modelo, calidad y duración. No hay video ilimitado.
+            </p>
+          </div>
+          <div className="video-wallet-balance">
+            <span>Saldo disponible</span>
+            <strong>{videoWallet.availableCredits.toLocaleString("es-AR")}</strong>
+            <small>Video Credits</small>
+            {videoWallet.reservedCredits > 0 && (
+              <em>{videoWallet.reservedCredits} reservados en generaciones</em>
+            )}
+          </div>
+        </div>
+
+        <div className="video-model-costs">
+          {videoCatalog.models.map((model) => (
+            <article className={"video-model-cost " + model.tier} key={model.key}>
+              <span>{model.tier === "fast" ? "FAST" : model.tier === "quality" ? "QUALITY" : "PREMIUM"}</span>
+              <strong>{model.name.replace(/^Video (Fast|Quality|Premium) · /, "")}</strong>
+              <small>
+                {model.creditsPerUnit} créditos / {model.billingUnit === "second" ? "segundo" : "video"}
+              </small>
+            </article>
+          ))}
+        </div>
+
+        <div className="video-pack-grid">
+          {videoCatalog.packs.map((pack) => (
+            <article
+              className={
+                pack.metadata?.recommended
+                  ? "video-pack-card recommended"
+                  : "video-pack-card"
+              }
+              key={pack.key}
+            >
+              <div>
+                <span className="eyebrow">
+                  {pack.metadata?.recommended ? "Recomendado" : "Prepago"}
+                </span>
+                <h3>{pack.name}</h3>
+                <p>{pack.description}</p>
+              </div>
+              <strong className="video-pack-credits">
+                {pack.credits.toLocaleString("es-AR")}
+                <small> créditos</small>
+              </strong>
+              <div className="video-pack-price">
+                {pack.price
+                  ? new Intl.NumberFormat("es-AR", {
+                      style: "currency",
+                      currency: pack.price.currency,
+                      maximumFractionDigits: pack.price.currency === "ARS" ? 0 : 2
+                    }).format(pack.price.unitAmountMinor / 100)
+                  : "No disponible"}
+              </div>
+              <button
+                className="connect-button"
+                disabled={
+                  !canManage ||
+                  busyVideoPack != null ||
+                  !provider?.configured ||
+                  !videoCatalog.commerceEnabled ||
+                  !pack.price
+                }
+                onClick={() => void startVideoCreditCheckout(pack)}
+              >
+                {busyVideoPack === pack.key
+                  ? "Abriendo Mercado Pago..."
+                  : "Comprar Video Credits"}
+              </button>
+            </article>
+          ))}
+        </div>
+
+        <div className="video-credit-policy">
+          <strong>Cómo funciona el consumo</strong>
+          <span>
+            PULSE cotiza antes de generar, reserva los créditos y sólo los consume
+            cuando el proveedor completa el video. Si la generación falla, la reserva se libera.
+          </span>
+          {!videoCatalog.commerceEnabled && (
+            <span className="video-commerce-pending">
+              Compra temporalmente deshabilitada hasta completar la conexión productiva
+              con el proveedor de video. PULSE no vende créditos que todavía no puede ejecutar.
+            </span>
+          )}
+        </div>
+      </section>
 
       <div className="section-heading billing-plans-heading">
         <div>
