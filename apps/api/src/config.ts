@@ -91,6 +91,9 @@ const schema = z.object({
   TRAINIA_SSO_SECRET: optionalSecret,
   TRAINIA_SSO_ISSUER: z.string().min(1).default("trainia"),
   TRAINIA_SSO_AUDIENCE: z.string().min(1).default("valkiria-pulse"),
+  PULSE_GROWTH_INTEGRATIONS_ENABLED: booleanFromEnv(false),
+  TRAINIA_GROWTH_SECRET: optionalSecret,
+  TRAINIA_GROWTH_AUDIENCE: z.string().min(1).default("valkiria-pulse-growth"),
 
   INSTAGRAM_APP_ID: optionalString,
   INSTAGRAM_APP_SECRET: optionalString,
@@ -142,6 +145,15 @@ if (parsed.data.NODE_ENV === "production") {
   if (parsed.data.PULSE_VIDEO_COMMERCE_ENABLED && !parsed.data.FAL_API_KEY) {
     throw new Error(
       "FAL_API_KEY is required in production when Video Credits commerce is enabled"
+    );
+  }
+
+  if (
+    parsed.data.PULSE_GROWTH_INTEGRATIONS_ENABLED &&
+    !parsed.data.TRAINIA_GROWTH_SECRET
+  ) {
+    throw new Error(
+      "TRAINIA_GROWTH_SECRET is required when PULSE_GROWTH_INTEGRATIONS_ENABLED=true"
     );
   }
 
