@@ -43,4 +43,8 @@ until curl -fsS "http://127.0.0.1:${WEB_PORT}/health" >/dev/null 2>&1; do
   sleep 2
 done
 
-echo "[deploy] Ensuring PULSE owner bootstrap"\ndocker compose exec -T api npm run owner:bootstrap --workspace @pulse/api\n\ndocker compose ps\necho "[deploy] PULSE runtime is healthy at http://127.0.0.1:${WEB_PORT}"\n
+echo "[deploy] Ensuring PULSE owner bootstrap"
+docker compose exec -T api npm run owner:bootstrap --workspace @pulse/api
+
+docker compose ps
+echo "[deploy] PULSE runtime is healthy at http://127.0.0.1:${WEB_PORT}"
