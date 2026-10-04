@@ -80,7 +80,9 @@ app.get("/health", async (_req, res) => {
       database: "ok",
       agents: agentRuntime.agents,
       agentMode: agentRuntime.mode,
+      agentProvider: agentRuntime.provider,
       agentModel: agentRuntime.model,
+      agentMaxConcurrency: agentRuntime.maxConcurrency,
       runtime: ["api", "worker"]
     });
   } catch {
