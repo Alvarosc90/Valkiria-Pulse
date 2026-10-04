@@ -155,3 +155,22 @@ When usage becomes material:
 - increase provider buffer from real weekly burn;
 - add provider redundancy before high-volume agency plans;
 - evaluate direct/custom GPU deployments only after serverless model API spend becomes predictable.
+
+
+## Internal commercial report
+
+Run:
+
+```bash
+npm run video:commerce --workspace @pulse/api
+```
+
+The report returns:
+- credits sold;
+- available and reserved customer liability;
+- completed video generations;
+- estimated provider cost;
+- revenue grouped by currency;
+- configured provider buffer target.
+
+Keep this report internal. Customer-facing APIs must not expose provider cost or gross margin.
