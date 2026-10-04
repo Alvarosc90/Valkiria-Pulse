@@ -27,6 +27,7 @@ import calendarsRouter from "./routes/calendars.js";
 import mediaRouter from "./routes/media.js";
 import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
+import videoCreditsRouter from "./routes/videoCredits.js";
 import publicRouter from "./routes/public.js";
 import {
   loadBrandContext,
@@ -185,6 +186,7 @@ app.use("/api/v1/brands", requireAuth, requireTenantMatch, brandsRouter);
 app.use("/api/v1/calendars", requireAuth, requireTenantMatch, calendarsRouter);
 app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
 app.use("/api/v1/social-accounts", requireAuth, requireTenantMatch, socialAccountsRouter);
+app.use("/api/v1/video-credits", requireAuth, requireTenantMatch, videoCreditsRouter);
 
 app.use(errorHandler);
 
