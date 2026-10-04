@@ -9,6 +9,11 @@ import {
   mapMercadoPagoSubscriptionStatus,
   validateMercadoPagoSignature
 } from "./mercadoPago.js";
+import {
+  findVideoCreditCheckoutByReference,
+  settleVideoCreditCheckout,
+  updateVideoCreditCheckoutPaymentState
+} from "./videoCreditCheckout.js";
 
 type CheckoutRow = RowDataPacket & {
   id: string;
@@ -290,13 +295,63 @@ async function processPayment(dataId: string) {
     return { matched: false as const, reason: "external_reference_missing" };
   }
 
+  const status = String(payment?.status ?? "unknown").toLowerCase();
+  const mapped = mapMercadoPagoPaymentStatus(status);
+
+  const videoRow = await findVideoCreditCheckoutByReference(externalReference);
+  if (videoRow) {
+    if (mapped === "approved") {
+      const settled = await settleVideoCreditCheckout({
+        row: videoRow,
+        paymentId: String(payment?.id ?? dataId),
+        paymentStatus: status,
+        currency: payment?.currency_id,
+        amount: payment?.transaction_amount
+      });
+
+      return {
+        matched: true as const,
+        tenantId: Number(videoRow.tenant_id),
+        videoCreditCheckoutId: String(videoRow.id),
+        paymentStatus: status,
+        paymentState: mapped,
+        credited: settled.credited,
+        credits: settled.credits
+      };
+    }
+
+    if (mapped === "pending" || mapped === "failed") {
+      await updateVideoCreditCheckoutPaymentState({
+        row: videoRow,
+        paymentId: String(payment?.id ?? dataId),
+        paymentStatus: status,
+        state: mapped
+      });
+
+      return {
+        matched: true as const,
+        tenantId: Number(videoRow.tenant_id),
+        videoCreditCheckoutId: String(videoRow.id),
+        paymentStatus: status,
+        paymentState: mapped,
+        credited: false
+      };
+    }
+
+    return {
+      matched: true as const,
+      tenantId: Number(videoRow.tenant_id),
+      videoCreditCheckoutId: String(videoRow.id),
+      paymentStatus: status,
+      paymentState: mapped,
+      credited: false
+    };
+  }
+
   const row = await checkoutByReference(externalReference);
   if (!row) {
     return { matched: false as const, reason: "checkout_not_found" };
   }
-
-  const status = String(payment?.status ?? "unknown").toLowerCase();
-  const mapped = mapMercadoPagoPaymentStatus(status);
 
   if (mapped === "approved") {
     assertCommercialMatch({
