@@ -8,6 +8,8 @@ import { recordGrowthConversion, upsertGrowthContact } from "../services/growthS
 
 const signalClaimsSchema = z.object({
   sub: z.string().min(1).max(190),
+  iat: z.number().int().positive(),
+  exp: z.number().int().positive(),
   tenantId: z.union([z.string(), z.number()]).transform((value) => String(value)),
   eventId: z.string().min(4).max(190),
   eventType: z.string().min(2).max(120),
