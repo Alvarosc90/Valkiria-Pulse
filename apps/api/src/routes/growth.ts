@@ -13,6 +13,7 @@ import {
   listGrowthCampaigns,
   recordGrowthConversion,
   updateGrowthCampaign,
+  updateGrowthSequenceStatus,
   upsertGrowthContact
 } from "../services/growthService.js";
 
@@ -365,6 +366,41 @@ router.post(
       });
 
       res.status(201).json({ data });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/sequences/:sequenceId",
+  requireRole("owner", "admin", "editor"),
+  async (req, res, next) => {
+    try {
+      const sequenceId = z.coerce.number().int().positive().parse(req.params.sequenceId);
+      const body = z.object({
+        status: z.enum(["draft", "ready", "active", "paused", "completed"])
+      }).parse(req.body);
+
+      const tenantId = Number(req.auth!.tenantId);
+      const data = await updateGrowthSequenceStatus({
+        tenantId,
+        sequenceId,
+        status: body.status
+      });
+
+      await auditEvent({
+        tenantId,
+        userId: Number(req.auth!.userId),
+        action: "growth.sequence.status_updated",
+        entityType: "growth_sequence",
+        entityId: sequenceId,
+        metadata: { status: body.status },
+        ip: req.ip,
+        userAgent: req.get("user-agent")
+      });
+
+      res.json({ data });
     } catch (error) {
       next(error);
     }
