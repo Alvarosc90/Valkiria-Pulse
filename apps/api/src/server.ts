@@ -29,6 +29,7 @@ import overviewRouter from "./routes/overview.js";
 import socialAccountsRouter from "./routes/socialAccounts.js";
 import videoCreditsRouter from "./routes/videoCredits.js";
 import growthRouter from "./routes/growth.js";
+import connectorsRouter from "./routes/connectors.js";
 import publicRouter from "./routes/public.js";
 import {
   loadBrandContext,
@@ -189,6 +190,7 @@ app.use("/api/v1/overview", requireAuth, requireTenantMatch, overviewRouter);
 app.use("/api/v1/social-accounts", requireAuth, requireTenantMatch, socialAccountsRouter);
 app.use("/api/v1/video-credits", requireAuth, requireTenantMatch, videoCreditsRouter);
 app.use("/api/v1/growth", requireAuth, requireTenantMatch, growthRouter);
+app.use("/api/v1/connectors", requireAuth, requireTenantMatch, connectorsRouter);
 
 app.use(errorHandler);
 
