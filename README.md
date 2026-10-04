@@ -59,12 +59,18 @@ npm run dev:api
 npm run dev:web
 ```
 
-For an AI-backed agent runtime configure an OpenAI-compatible endpoint through:
+For an AI-backed agent runtime configure:
+- `PULSE_LLM_PROVIDER`
 - `PULSE_LLM_BASE_URL`
 - `PULSE_LLM_MODEL`
-- optional `PULSE_LLM_API_KEY`
+- `PULSE_LLM_API_KEY`
+- concurrency/retry and provider price snapshot variables
+
+Production should use a dedicated OpenAI API Project and project-scoped service account owned by Valkiria Project. Tenant token/cost usage is metered internally in `ai_usage_events`; plan generation limits remain enforced by PULSE.
 
 Without a model endpoint the agents use deterministic development fallbacks.
+
+See `docs/AI_RUNTIME.md` for production ownership, scaling, metering and model-routing guidance.
 
 ## Production
 

@@ -58,7 +58,10 @@ abstract class BasePlatformAgent implements PlatformAgent {
     const request = {
       platform: this.platform,
       systemPrompt: platformSystemPrompt(this.platform),
-      userPrompt: platformUserPrompt(entry, brand, context)
+      userPrompt: platformUserPrompt(entry, brand, context),
+      tenantId: entry.tenantId || brand.tenantId,
+      brandId: brand.brandId,
+      entryId: entry.id
     };
 
     const firstOutput = await this.model.generateJson(request);
